@@ -366,6 +366,13 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 				case "hxx":
 					lexer = CppLexer.class;
 					break;
+				case "json":
+					lexer = JSONLexer.class;
+					break;
+				case "xml":
+				case "html":
+					lexer = XMLLexer.class;
+					break;
 			}
 			return lexer;
 		}
