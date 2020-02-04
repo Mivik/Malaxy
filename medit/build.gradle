@@ -1,28 +1,32 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
 	compileSdkVersion 29
 	buildToolsVersion "29.0.2"
+
+
 	defaultConfig {
-		applicationId "com.mivik.malaxy"
 		minSdkVersion 15
 		targetSdkVersion 29
 		versionCode 1
 		versionName "1.0"
+
+		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
 	}
+
 	buildTypes {
 		release {
 			minifyEnabled false
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 		}
 	}
+
 }
 
 dependencies {
-	implementation project(':medit')
 	implementation fileTree(dir: 'libs', include: ['*.jar'])
-	implementation 'com.github.castorflex.smoothprogressbar:library:1.1.0'
 	implementation 'androidx.appcompat:appcompat:1.1.0'
-	implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
-	implementation 'com.google.android.material:material:1.2.0-alpha04'
+	api 'com.github.Mivik:Malax:1.0.5'
+	api 'com.github.Mivik:MLexer:1.0.3'
 }

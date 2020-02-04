@@ -4,17 +4,14 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
-import com.mivik.malaxy.C;
-import com.mivik.malaxy.CrashActivity;
-import com.mivik.medit.CrashHandler;
-import com.mivik.medit.G;
-import com.mivik.medit.ui.UI;
+import com.mivik.malaxy.ui.UI;
 
 import java.io.File;
 import java.io.FileOutputStream;
 
-public class MainApplication extends Application implements CrashHandler.CrashListener, C {
+public class MainApplication extends Application implements CrashHandler.CrashListener, Const {
 	private static File ERROR_FILE = new File(Environment.getExternalStorageDirectory(), "VEditCrash.txt");
+	private static Context cx;
 
 	@Override
 	protected void attachBaseContext(Context base) {
@@ -22,6 +19,10 @@ public class MainApplication extends Application implements CrashHandler.CrashLi
 		G.Initialize(base);
 		CrashHandler.install(this);
 		//Logs.setLogFile(new File(Environment.getExternalStorageDirectory(), "VEditLog.txt"));
+	}
+
+	public static Context getContext() {
+		return cx;
 	}
 
 	@Override

@@ -1,7 +1,7 @@
 package com.mivik.malaxy;
 
+
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
@@ -12,21 +12,24 @@ import android.view.*;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toolbar;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.LinearLayoutCompat;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.ViewCompat;
-import com.mivik.medit.*;
-import com.mivik.medit.theme.VEditThemeDark;
-import com.mivik.medit.theme.VEditThemeLight;
-import com.mivik.medit.ui.FindReplaceDialog;
-import com.mivik.medit.ui.UI;
+import com.mivik.malax.WrappedEditable;
+import com.mivik.malaxy.ui.FindReplaceDialog;
+import com.mivik.malaxy.ui.MultiContentManager;
+import com.mivik.malaxy.ui.UI;
+import com.mivik.medit.MEdit;
+import com.mivik.medit.theme.MEditThemeDark;
+import com.mivik.medit.theme.MEditThemeLight;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
-public class EditActivity extends BaseActivity implements VEdit.EditListener, MultiContentManager.EditDataClickListener, C {
+public class EditActivity extends BaseActivity implements WrappedEditable.EditActionListener, MultiContentManager.EditDataClickListener, Const {
 	public static final char[] SYMBOLS = {'\t', '{', '}', '(', ')', ';', ',', '.', '=', '\"', '<', '>', '&', '+', '-', '*', '/', '[', ']', '|', '!', '?', '\\', ':', '_'};
 	public static final String TAB = "->";
 
@@ -35,12 +38,11 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 
 	private LinearLayoutCompat Container;
 	private MultiContentManager ContentManager;
-	private VEdit Content;
+	private MEdit Content;
 	private Toolbar Title;
 	private LoadingDialog Loading;
 	private LinearLayoutCompat SymbolLayout;
-
-	private FindReplaceDialog _FRDialog;
+	private FindReplaceDialog FRDialog;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -56,12 +58,10 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 		Container.setOrientation(LinearLayoutCompat.VERTICAL);
 		Container.addView(Title);
 		ContentManager = new MultiContentManager(this);
-		ContentManager.setTheme(VEditThemeDark.getInstance());
+		ContentManager.setTheme(MEditThemeDark.getInstance());
 		ContentManager.setEditDataClickListener(this);
 		Content = ContentManager.getContent();
-		Content.setTypeface(Typeface.createFromAsset(getAssets(), "FiraCode-Medium.ttf"));
-		Content.setAutoParse(false);
-		Content.setEditListener(this);
+		Content.addEditActionListener(this);
 		onSettingChanged();
 		{
 			LinearLayoutCompat.LayoutParams para = new LinearLayoutCompat.LayoutParams(-1, 0);
@@ -70,10 +70,11 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 		}
 		initSymbolLayout();
 		Container.addView(SymbolLayout, -1, -2);
-		_FRDialog = new FindReplaceDialog(Content);
 		setContentView(Container);
 
 		Loading = new LoadingDialog(this);
+		FRDialog = new FindReplaceDialog(Content);
+		Content.setEventHandler(new ZoomHelper());
 	}
 
 	private void initSymbolLayout() {
@@ -82,7 +83,7 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 		SymbolLayout.setBackgroundColor(UI.ThemeColor);
 		SymbolLayout.setAlpha(0.7f);
 		LinearLayoutCompat symbolContent = new LinearLayoutCompat(this);
-		symbolContent.setOrientation(LinearLayout.HORIZONTAL);
+		symbolContent.setOrientation(LinearLayoutCompat.HORIZONTAL);
 		int w = UI.AccentColor;
 		TextView tv;
 		LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(UI.dp2px(38), UI.dp2px(38));
@@ -129,18 +130,17 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 	}
 
 	@Override
-	public boolean onEdit(VEdit.EditAction action) {
+	public boolean beforeAction(WrappedEditable.EditAction editAction) {
+		return false;
+	}
+
+	@Override
+	public void afterAction(WrappedEditable.EditAction editAction) {
 		MultiContentManager.EditData data = ContentManager.getCurrentEditData();
 		if (data.saved) {
 			data.saved = false;
-			UI.onUI(new Runnable() {
-				@Override
-				public void run() {
-					ContentManager.onEditDataUpdated(ContentManager.getIndex());
-				}
-			});
+			ContentManager.onEditDataUpdated(ContentManager.getIndex());
 		}
-		return false;
 	}
 
 	@Override
@@ -177,7 +177,7 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 				public void onChoose(File f) {
 					data.setFile(f);
 					SaveTab(data, action);
-					//ContentManager.onEditDataUpdated(data.index);
+					ContentManager.onEditDataUpdated(data.index);
 				}
 			});
 			ChooseFileActivity.createFile(this, REQUEST_CODE_CHOOSE_FILE);
@@ -209,7 +209,7 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 		sm.getItem().setShowAsActionFlags(2);
 		sm.add(0, 6, 0, "撤销");
 		sm.add(0, 7, 0, "重做");
-		sm.add(0, 8, 0, "查找替换");
+		sm.add(0, 8, 0, "查找/替换");
 		menu.add(0, 5, 0, R.string.title_settings).setIcon(UI.tintDrawable(this, R.mipmap.icon_settings, UI.AccentColor)).setShowAsActionFlags(2);
 		return true;
 	}
@@ -307,7 +307,7 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 				break;
 			}
 			case 8: {
-				_FRDialog.show();
+				FRDialog.show();
 				break;
 			}
 			default:
@@ -336,9 +336,10 @@ public class EditActivity extends BaseActivity implements VEdit.EditListener, Mu
 	}
 
 	private void onSettingChanged() {
+		Content.setTypeface(G._FONT);
 		Content.setTextSize(TypedValue.COMPLEX_UNIT_SP, G._TEXT_SIZE);
 		Content.setShowLineNumber(G._SHOW_LINE_NUMBER);
-		ContentManager.setTheme(G._NIGHT_THEME ? VEditThemeDark.getInstance() : VEditThemeLight.getInstance());
+		ContentManager.setTheme(G._NIGHT_THEME ? MEditThemeDark.getInstance() : MEditThemeLight.getInstance());
 		ContentManager.onEditDataUpdated(ContentManager.getIndex());
 	}
 

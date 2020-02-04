@@ -6,16 +6,6 @@ import android.content.Intent;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.view.ViewCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.graphics.drawable.DrawerArrowDrawable;
-import android.support.v7.widget.AppCompatEditText;
-import android.support.v7.widget.AppCompatTextView;
-import android.support.v7.widget.LinearLayoutCompat;
-import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -25,10 +15,20 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import com.mivik.medit.G;
-import com.mivik.medit.ui.ChooseFileFragment;
-import com.mivik.medit.ui.DividerDrawable;
-import com.mivik.medit.ui.UI;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.graphics.drawable.DrawerArrowDrawable;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatTextView;
+import androidx.appcompat.widget.LinearLayoutCompat;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import com.mivik.malaxy.ui.ChooseFileFragment;
+import com.mivik.malaxy.ui.DividerDrawable;
+import com.mivik.malaxy.ui.UI;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -121,7 +121,12 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 					UI.forceDismiss(InputDialog);
 					returnFile(ret);
 				}
-			}).setNegativeButton("取消", null).setCancelable(true).create();
+			}).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					UI.forceDismiss(InputDialog);
+				}
+			}).setCancelable(true).create();
 			OverrideDialog = new AlertDialog.Builder(this).setTitle("文件已存在").setMessage("你确定要覆盖此文件吗？").setPositiveButton("确定", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
@@ -219,8 +224,8 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 			t.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 9);
 			layout.addView(t, para);
 			layout.setClickable(true);
-			TypedArray arr = getTheme().obtainStyledAttributes(RippleID, new int[] {android.R.attr.selectableItemBackground});
-			layout.setBackground(arr.getDrawable(0));
+			TypedArray arr = getTheme().obtainStyledAttributes(RippleID, new int[]{android.R.attr.selectableItemBackground});
+			ViewCompat.setBackground(layout, arr.getDrawable(0));
 			arr.recycle();
 			layout.setOnClickListener(new View.OnClickListener() {
 				@Override
@@ -259,7 +264,7 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 		int p = UI.dp2px(12);
 		layout.setPadding(p, p, p * 2, p);
 		ImageView icon = new ImageView(this);
-		icon.setImageDrawable(UI.tintDrawable(getDrawable(id), UI.ThemeColor));
+		icon.setImageDrawable(UI.tintDrawable(ContextCompat.getDrawable(this, id), UI.ThemeColor));
 		LinearLayout.LayoutParams para = new LinearLayout.LayoutParams(_ICON_SIZE, _ICON_SIZE);
 		para.rightMargin = UI.dp2px(10);
 		layout.addView(icon, para);
@@ -270,8 +275,8 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 		t.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 		layout.addView(t);
 		layout.setClickable(true);
-		TypedArray arr = getTheme().obtainStyledAttributes(RippleID, new int[] {android.R.attr.selectableItemBackground});
-		layout.setBackground(arr.getDrawable(0));
+		TypedArray arr = getTheme().obtainStyledAttributes(RippleID, new int[]{android.R.attr.selectableItemBackground});
+		ViewCompat.setBackground(layout, arr.getDrawable(0));
 		arr.recycle();
 		layout.setOnClickListener(listener);
 		return layout;
