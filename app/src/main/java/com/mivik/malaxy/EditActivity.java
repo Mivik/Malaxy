@@ -75,6 +75,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		Loading = new LoadingDialog(this);
 		FRDialog = new FindReplaceDialog(Content);
 		Content.setEventHandler(new ZoomHelper());
+		Content.addEditActionListener(new CodeIndentListener());
 	}
 
 	private void initSymbolLayout() {
@@ -130,12 +131,12 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 	}
 
 	@Override
-	public boolean beforeAction(WrappedEditable.EditAction editAction) {
+	public boolean beforeAction(WrappedEditable wrappedEditable, WrappedEditable.EditAction editAction) {
 		return false;
 	}
 
 	@Override
-	public void afterAction(WrappedEditable.EditAction editAction) {
+	public void afterAction(WrappedEditable wrappedEditable, WrappedEditable.EditAction editAction) {
 		MultiContentManager.EditData data = ContentManager.getCurrentEditData();
 		if (data.saved) {
 			data.saved = false;

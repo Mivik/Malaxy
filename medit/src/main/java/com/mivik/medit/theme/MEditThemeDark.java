@@ -50,8 +50,10 @@ public class MEditThemeDark extends MEditTheme {
 		C[MLexer.TYPE_COMMA] = C[MLexer.TYPE_SEMICOLON];
 		C[MLexer.TYPE_PREPROCESSOR_COMMAND] = blue5;
 		C[MLexer.TYPE_PURE] = white;
-		C[MLexer.TYPE_TAG_START] = C[MLexer.TYPE_IDENTIFIER];
-		C[MLexer.TYPE_TAG_END] = C[MLexer.TYPE_IDENTIFIER];
+		C[MLexer.TYPE_CONTENT] = C[MLexer.TYPE_PURE];
+		C[MLexer.TYPE_TAG_START] = C[MLexer.TYPE_KEYWORD];
+		C[MLexer.TYPE_TAG_END] = C[MLexer.TYPE_KEYWORD];
+		C[MLexer.TYPE_CONTENT_START] = C[MLexer.TYPE_TAG_START];
 		C[MLexer.TYPE_CDATA] = C[MLexer.TYPE_PREPROCESSOR_COMMAND];
 	}
 }

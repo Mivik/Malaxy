@@ -65,7 +65,7 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 	}
 
 	@Override
-	public boolean beforeAction(WrappedEditable.EditAction editAction) {
+	public boolean beforeAction(WrappedEditable wrappedEditable, WrappedEditable.EditAction editAction) {
 		if (editAction instanceof WrappedEditable.ReplaceAction) {
 			WrappedEditable.ReplaceAction action = (WrappedEditable.ReplaceAction) editAction;
 			if (ReadCursor.compareTo((Cursor) action.osel.begin) > 0) return true;
@@ -88,7 +88,7 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 	}
 
 	@Override
-	public void afterAction(WrappedEditable.EditAction editAction) {
+	public void afterAction(WrappedEditable wrappedEditable, WrappedEditable.EditAction editAction) {
 		if (editAction instanceof WrappedEditable.InsertCharAction) {
 			WrappedEditable.InsertCharAction action = (WrappedEditable.InsertCharAction) editAction;
 			if (action.ch == '\n') {

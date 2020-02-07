@@ -93,7 +93,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	protected SlideBar _SlideBar;
 	private boolean _BlinkCursor;
 	private boolean _CurrentlyShowCursorLine;
-	private boolean _ShowCursorLine;
+	private boolean _ShowCursorLine = true;
 	private final byte[] _BlinkLock = new byte[0];
 	private Handler _Handler = new Handler();
 	private SelectListener _SelectListener;
