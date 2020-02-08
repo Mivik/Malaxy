@@ -24,7 +24,7 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 	}
 
 	public void setEnabled(boolean flag) {
-		if (this.enabled==flag) return;
+		if (this.enabled == flag) return;
 		if (this.enabled = flag) onUpdate();
 	}
 
