@@ -32,6 +32,7 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 
 	public Malaxy(Context cx, AttributeSet attrs, int defStyle) {
 		super(cx, attrs, defStyle);
+		setSplitLineEnabled(true);
 		setShowLineNumber(false);
 		setTheme(MalaxyTheme.getInstance());
 		setLexer(null);

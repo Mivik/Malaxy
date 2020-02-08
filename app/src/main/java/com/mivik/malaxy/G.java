@@ -21,6 +21,7 @@ public final class G implements Const {
 	public static String _FONT_STRING;
 	public static Typeface _FONT;
 	public static final ArrayList<File> _BOOKMARKS = new ArrayList<>();
+	public static boolean _SPLIT_LINE;
 
 	public static final void Initialize(Context cx) {
 		S = cx.getSharedPreferences("editor_config", Context.MODE_PRIVATE);
@@ -40,6 +41,7 @@ public final class G implements Const {
 		_SHOW_LINE_NUMBER = S.getBoolean("show_line_number", true);
 		_NIGHT_THEME = S.getBoolean("night_theme", true);
 		_FONT_STRING = S.getString("font", "#FiraCode");
+		_SPLIT_LINE = S.getBoolean("split_line", false);
 		updateFont(cx.getAssets());
 	}
 
@@ -72,6 +74,10 @@ public final class G implements Const {
 				break;
 		}
 		if (_FONT == null) _FONT = Typeface.DEFAULT;
+	}
+
+	public static void setSplitLine(boolean flag) {
+		S.edit().putBoolean("split_line", _SPLIT_LINE = flag).apply();
 	}
 
 	public static void setLexerId(int id) {

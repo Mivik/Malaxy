@@ -62,7 +62,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		ContentManager.setEditDataClickListener(this);
 		Content = ContentManager.getContent();
 		Content.addEditActionListener(this);
-		onSettingChanged();
+		onSettingsChanged();
 		{
 			LinearLayoutCompat.LayoutParams para = new LinearLayoutCompat.LayoutParams(-1, 0);
 			para.weight = 1;
@@ -324,7 +324,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		if (resultCode == RESULT_OK) {
 			switch (requestCode) {
 				case REQUEST_CODE_SETTING:
-					if (data.getBooleanExtra(SettingActivity.CONFIG_CHANGED, false)) onSettingChanged();
+					if (data.getBooleanExtra(SettingActivity.CONFIG_CHANGED, false)) onSettingsChanged();
 					break;
 				case REQUEST_CODE_CHOOSE_FILE:
 					String s = data.getStringExtra(ChooseFileActivity.TAG_RESULT);
@@ -336,10 +336,11 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		super.onActivityResult(requestCode, resultCode, data);
 	}
 
-	private void onSettingChanged() {
+	private void onSettingsChanged() {
 		Content.setTypeface(G._FONT);
 		Content.setTextSize(TypedValue.COMPLEX_UNIT_SP, G._TEXT_SIZE);
 		Content.setShowLineNumber(G._SHOW_LINE_NUMBER);
+		Content.setSplitLineEnabled(G._SPLIT_LINE);
 		ContentManager.setTheme(G._NIGHT_THEME ? MEditThemeDark.getInstance() : MEditThemeLight.getInstance());
 		ContentManager.onEditDataUpdated(ContentManager.getIndex());
 	}

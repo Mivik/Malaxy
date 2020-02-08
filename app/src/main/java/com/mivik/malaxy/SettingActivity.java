@@ -97,45 +97,63 @@ public class SettingActivity extends BaseActivity {
 				Dialog.show();
 			}
 		});
-		final IntReference __CHOSE_ITEM = new IntReference(G._LEXER_ID);
-		Q.addSimpleItem("切换高亮", "切换编辑器所使用的高亮方式").setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				new AlertDialog.Builder(SettingActivity.this).setTitle("切换高亮").setSingleChoiceItems(G.LEXER_NAMES, G._LEXER_ID, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						__CHOSE_ITEM.val = which;
-					}
-				}).setPositiveButton("确定", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						if (__CHOSE_ITEM.val == G._LEXER_ID) return;
-						G.setLexerId(__CHOSE_ITEM.val);
-						onConfigChanged();
-					}
-				}).setNegativeButton("取消", null).setCancelable(true).show();
-			}
-		});
-		final SettingFragment.CheckBoxItem __SHOW_LINE_NUMBER = Q.addCheckBoxItem("显示行号", "设定编辑器是否显示行号");
-		__SHOW_LINE_NUMBER.setChecked(G._SHOW_LINE_NUMBER);
-		__SHOW_LINE_NUMBER.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (__SHOW_LINE_NUMBER.isChecked() == G._SHOW_LINE_NUMBER) return;
-				G.setShowLineNumber(__SHOW_LINE_NUMBER.isChecked());
-				onConfigChanged();
-			}
-		});
-		final SettingFragment.CheckBoxItem __NIGHT_THEME = Q.addCheckBoxItem("夜间主题", "设定编辑器是否使用夜间主题");
-		__NIGHT_THEME.setChecked(G._NIGHT_THEME);
-		__NIGHT_THEME.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (__NIGHT_THEME.isChecked() == G._NIGHT_THEME) return;
-				G.setNightTheme(__NIGHT_THEME.isChecked());
-				onConfigChanged();
-			}
-		});
+		{
+			final IntReference ret = new IntReference(G._LEXER_ID);
+			Q.addSimpleItem("切换高亮", "切换编辑器所使用的高亮方式").setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					new AlertDialog.Builder(SettingActivity.this).setTitle("切换高亮").setSingleChoiceItems(G.LEXER_NAMES, G._LEXER_ID, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							ret.val = which;
+						}
+					}).setPositiveButton("确定", new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							if (ret.val == G._LEXER_ID) return;
+							G.setLexerId(ret.val);
+							onConfigChanged();
+						}
+					}).setNegativeButton("取消", null).setCancelable(true).show();
+				}
+			});
+		}
+		{
+			final SettingFragment.CheckBoxItem item = Q.addCheckBoxItem("自动换行", "设置编辑器是否将一行自动分割为多行");
+			item.setChecked(G._SPLIT_LINE);
+			item.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (item.isChecked()==G._SPLIT_LINE) return;
+					G.setSplitLine(item.isChecked());
+					onConfigChanged();
+				}
+			});
+		}
+		{
+			final SettingFragment.CheckBoxItem item = Q.addCheckBoxItem("显示行号", "设定编辑器是否显示行号");
+			item.setChecked(G._SHOW_LINE_NUMBER);
+			item.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (item.isChecked() == G._SHOW_LINE_NUMBER) return;
+					G.setShowLineNumber(item.isChecked());
+					onConfigChanged();
+				}
+			});
+		}
+		{
+			final SettingFragment.CheckBoxItem item = Q.addCheckBoxItem("夜间主题", "设定编辑器是否使用夜间主题");
+			item.setChecked(G._NIGHT_THEME);
+			item.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (item.isChecked() == G._NIGHT_THEME) return;
+					G.setNightTheme(item.isChecked());
+					onConfigChanged();
+				}
+			});
+		}
 		setContentView(Q.getView());
 	}
 

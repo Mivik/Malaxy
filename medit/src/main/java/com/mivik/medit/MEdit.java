@@ -20,8 +20,8 @@ import androidx.appcompat.view.ActionMode;
 import com.mivik.malax.LineManager;
 import com.mivik.malax.Malax;
 import com.mivik.malax.WrappedEditable;
-import com.mivik.medit.theme.MEditThemeDark;
 import com.mivik.medit.theme.MEditTheme;
+import com.mivik.medit.theme.MEditThemeDark;
 import com.mivik.mlexer.CursorWrapper;
 import com.mivik.mlexer.MLexer;
 import com.mivik.mlexer.RangeSelection;
@@ -36,7 +36,11 @@ import java.util.Set;
 
 import static com.mivik.malax.BaseMalax.Cursor;
 
-public class MEdit extends View implements Runnable, LineManager.LineChangeListener, WrappedEditable.CursorListener<Cursor> {
+public class MEdit extends View implements
+		SplitLineManager.UpdateListener,
+		ViewTreeObserver.OnGlobalLayoutListener,
+		Runnable, LineManager.LineChangeListener,
+		WrappedEditable.CursorListener<Cursor> {
 	// --------------------
 	// -----Constants------
 	// --------------------
@@ -58,7 +62,9 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	protected float YOffset;
 	protected float TextHeight;
 	protected int ContentHeight;
-	protected Cursor C;
+	protected Cursor C = new Cursor(0, 0);
+	private Cursor DDC;
+	private Cursor DDSBegin, DDSEnd;
 	private boolean RS = false;
 	public Malax S;
 	public LineManager L;
@@ -71,7 +77,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	private int _YScrollRange;
 	protected float LineNumberWidth;
 	private int _maxOSX = 20, _maxOSY = 20;
-	protected RangeSelection<Cursor> _S;
+	protected RangeSelection<Cursor> _S = new RangeSelection<>(new Cursor(0, 0), new Cursor(0, 0));
 	private float _CursorWidth = 2;
 	private float _LinePaddingTop = 5, _LinePaddingBottom = 5;
 	private float _ContentLeftPadding = 7;
@@ -86,11 +92,9 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	protected MEditTheme _Theme = MEditThemeDark.getInstance();
 	protected MLexer _Lexer;
 	protected Indicator _Indicator = new GlassIndicator(this);
-	private float _CursorHorizonOffset;
-	private float _SStartHorizonOffset, _SEndHorizonOffset;
 	protected float LineHeight;
 	protected byte _DraggingCursor = Indicator.TYPE_NONE;
-	protected SlideBar _SlideBar;
+	protected SlideBar _SlideBar = new MaterialSlideBar(this);
 	private boolean _BlinkCursor;
 	private boolean _CurrentlyShowCursorLine;
 	private boolean _ShowCursorLine = true;
@@ -103,6 +107,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	private final Set<WrappedEditable.EditActionListener> _EditActionListeners = new HashSet<>();
 	private EventHandler H;
 	private boolean _HighlightLine = true;
+	private final SplitLineManager SL = new SplitLineManager(this);
 
 	// -----------------------
 	// -----Constructors------
@@ -118,6 +123,9 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 
 	public MEdit(Context cx, AttributeSet attr, int style) {
 		super(cx, attr, style);
+		getViewTreeObserver().addOnGlobalLayoutListener(this);
+		SL.setUpdateListener(this);
+		setSplitLineEnabled(false);
 		_lastClickX = _lastClickY = 0;
 		setLayerType(View.LAYER_TYPE_HARDWARE, null);
 		Scroller = new OverScroller(getContext());
@@ -144,7 +152,6 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 		setFocusable(true);
 		setFocusableInTouchMode(false);
 		_IMM = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-		_SlideBar = new MaterialSlideBar(this);
 		applyTheme();
 		setBlinkCursor(true);
 	}
@@ -152,6 +159,24 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	// ------------------
 	// -----Methods------
 	// ------------------
+
+	public float getLeftOfLine() {
+		return (_ShowLineNumber ? LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH : 0) + _ContentLeftPadding;
+	}
+
+	public float getLineWidth() {
+		return getWidth() - getLeftOfLine() - _SlideBar.getMaxWidth();
+	}
+
+	public void setSplitLineEnabled(boolean flag) {
+		SL.setEnabled(flag);
+		setScrollX(0);
+		postInvalidate();
+	}
+
+	public boolean isSplitLineEnabled() {
+		return SL.isEnabled();
+	}
 
 	public void setHighlightLine(boolean flag) {
 		this._HighlightLine = flag;
@@ -203,8 +228,10 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 		_S = new RangeSelection<>(S, 0, 0);
 		_Lexer = S.getLexer();
 		if (_Lexer == null) ContentPaint.setColor(_Theme.getTypeColor(MLexer.TYPE_PURE));
-		C = S.getBeginCursor();
+		moveCursor(S.getBeginCursor());
 		if (InputConnection != null) InputConnection.onUpdate();
+		S.setContentChangeListener(SL);
+		SL.onUpdate();
 		onLineChange();
 		postInvalidate();
 	}
@@ -273,10 +300,6 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 
 	public Indicator getIndicator() {
 		return _Indicator;
-	}
-
-	public float getCursorHorizonOffset() {
-		return _CursorHorizonOffset;
 	}
 
 	public float getLineHeight() {
@@ -600,6 +623,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 
 	public void moveCursor(Cursor x) {
 		C.set(x);
+		DDC = SL.getDisplayCursor(C);
 		onSelectionUpdate();
 		postInvalidate();
 	}
@@ -688,7 +712,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	}
 
 	public void makeLineVisible(int line) {
-		float y = LineHeight * (line + 1) - LineHeight;
+		float y = LineHeight * SL.getLineDisplayStart(line);
 		if (getScrollY() > y) {
 			finishScrolling();
 			scrollTo(getScrollX(), (int) y);
@@ -713,10 +737,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	public void makeCursorVisible(Cursor x) {
 		if (getHeight() == 0) return;
 		makeLineVisible(x.line);
-		float sum = (_ShowLineNumber ? (LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH) : 0) + _ContentLeftPadding;
-		char[] cs = S.getRawChars()[x.line];
-		for (int i = 0; i < x.column; i++)
-			sum += _CharWidths[cs[i]];
+		float sum = (_ShowLineNumber ? (LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH) : 0) + _ContentLeftPadding + x.column;
 		if (sum - _CursorWidth / 2 < getScrollX()) {
 			finishScrolling();
 			scrollTo((int) (sum - _CursorWidth / 2) - SCROLL_TO_CURSOR_EXTRA, getScrollY());
@@ -803,23 +824,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	}
 
 	public Cursor getCursorByPosition(float x, float y) {
-		x -= _ContentLeftPadding;
-		if (_ShowLineNumber) x -= (LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH);
-		Cursor ret = new Cursor(0, 0);
-		ret.line = Math.min((int) (y / LineHeight), L.size() - 1);
-		if (ret.line < 0) ret.line = 0;
-		final int len = L.getTrimmed(ret.line);
-		int i = 0;
-		final char[] cs = S.getRawChars()[ret.line];
-		for (float sum = -x; i < len; i++) {
-			if ((sum += getCharWidth(cs[i])) >= 0) {
-				if ((-(sum - getCharWidth(cs[i]))) > sum) // 是前面的更逼近一些
-					i++;
-				break;
-			}
-		}
-		ret.column = i;
-		return ret;
+		return SL.getOriginalCursor(new Cursor(Math.max((int) (y / LineHeight), 0), (int) (x - getLeftOfLine())));
 	}
 
 	public static boolean isSelectableChar(char c) {
@@ -838,6 +843,24 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	// --------------------------
 	// -----Override Methods-----
 	// --------------------------
+
+	@Override
+	public void onUpdate() {
+		DDC = SL.getDisplayCursor(C);
+		DDSBegin = SL.getDisplayCursor(_S.begin);
+		DDSEnd = SL.getDisplayCursor(_S.end);
+	}
+
+	@Override
+	public void scrollTo(int x, int y) {
+		if (SL.isEnabled()) x = 0;
+		super.scrollTo(x, y);
+	}
+
+	@Override
+	public void onGlobalLayout() {
+		SL.onUpdate();
+	}
 
 	@Override
 	public void onLineChanged(LineManager lineManager, int ori, int cur) {
@@ -1061,10 +1084,12 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 		final boolean showCursor = (!showSelecting);
 		final float bottom = getScrollY() + getHeight() + YOffset;
 		final int right = getScrollX() + getWidth();
-		final float xo = (_ShowLineNumber ? LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH : 0) + _ContentLeftPadding;
+		final float xo = getLeftOfLine();
+		final boolean spl = SL.isEnabled();
+		final float av = getWidth() - xo;
 
-		int line = Math.max((int) (getScrollY() / LineHeight), 0);
-		float y = line * LineHeight + YOffset + _LinePaddingTop;
+		int line = SL.findStartDrawLine(Math.max((int) (getScrollY() / LineHeight), 0));
+		float y;
 		float XStart, wtmp, x;
 		int i, en;
 		int tot;
@@ -1078,15 +1103,17 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 			parseTot = _Lexer.findPart(L.E[line]);
 			parseTarget = _Lexer.DS[parseTot];
 		}
-		float SStartLineEnd = -1;
+		float SBeginLineEnd = -1;
+		if (showCursor && _HighlightLine) {
+			ColorPaint.setColor(_Theme.getSelectionColor());
+			canvas.drawRect(xo - _ContentLeftPadding, LineHeight * DDC.line, right, LineHeight * (DDC.line + 1), ColorPaint);
+		}
 		LineDraw:
 		for (; line < L.size(); line++) {
+			if ((y = LineHeight * SL.getLineDisplayStart(line) + YOffset + _LinePaddingTop) >= bottom)
+				break;
 			if (_ShowLineNumber)
 				canvas.drawText(Integer.toString(line + 1), LineNumberWidth, y, LineNumberPaint);
-			if (showCursor && _HighlightLine && C.line == line) {
-				ColorPaint.setColor(_Theme.getSelectionColor());
-				canvas.drawRect(xo - _ContentLeftPadding, y - YOffset - _LinePaddingTop, right, y + TextHeight - YOffset + _LinePaddingBottom, ColorPaint);
-			}
 			final int sp = L.E[line];
 			i = 0;
 			en = L.getTrimmed(line);
@@ -1094,10 +1121,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 			XStart = xo;
 			if (getScrollX() > XStart && i < en)
 				while ((wtmp = XStart + getCharWidth(cs[i])) < getScrollX()) {
-					if (++i >= en) {
-						if ((y += LineHeight) >= bottom) break LineDraw;
-						continue LineDraw;
-					}
+					if (++i >= en) continue LineDraw;
 					XStart = wtmp;
 				}
 			if (_Lexer != null) {
@@ -1109,57 +1133,123 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 						ContentPaint.setColor(_Theme.getTypeColor(_Lexer.D[parseTot - 1]));
 				}
 			}
-			tot = 0;
-			for (x = XStart; i < en && x <= right; i++) {
-				if (i + sp == parseTarget) {
-					canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
-					XStart = x;
-					tot = 0;
-					ContentPaint.setColor(_Theme.getTypeColor(_Lexer.D[parseTot]));
-					++parseTot;
-					if (parseTot <= _Lexer.DS[0]) parseTarget = _Lexer.DS[parseTot];
+			if (spl) {
+				while (XStart >= av) {
+					XStart -= av;
+					y += LineHeight;
 				}
-				if ((TMP[tot] = cs[i]) == '\t') {
-					canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
-					XStart = x;
-					tot = 0;
-					XStart += _CharWidths[CHAR_TAB];
-					x += _CharWidths[CHAR_TAB];
-				} else
-					x += getCharWidth(TMP[tot++]);
-			}
-			canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
-			if (showSelecting) {
-				if (line == _S.begin.line) SStartLineEnd = x;
-				else if (line > _S.begin.line && line < _S.end.line) {
+				tot = 0;
+				int curLine = SL.getLineDisplayStart(line);
+				for (x = XStart; i < en; i++) {
+					if (i + sp == parseTarget) {
+						canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
+						XStart = x;
+						tot = 0;
+						ContentPaint.setColor(_Theme.getTypeColor(_Lexer.D[parseTot]));
+						++parseTot;
+						if (parseTot <= _Lexer.DS[0]) parseTarget = _Lexer.DS[parseTot];
+					}
+					if ((TMP[tot] = cs[i]) == '\t') {
+						canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
+						XStart = x;
+						tot = 0;
+						XStart += _CharWidths[CHAR_TAB];
+						x += _CharWidths[CHAR_TAB];
+					} else
+						x += getCharWidth(TMP[tot++]);
+					if (x >= getWidth()) {
+						--tot;
+						--i;
+						canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
+						x -= getCharWidth(TMP[tot + 1]);
+						ColorPaint.setColor(_Theme.getLineNumberColor());
+						canvas.drawRect(x, y - YOffset - _LinePaddingTop, getWidth(), y - YOffset - _LinePaddingTop + LineHeight, ColorPaint);
+						tot = 0;
+						if (showSelecting) {
+							final float yb = y - YOffset - _LinePaddingTop;
+							ColorPaint.setColor(_Theme.getSelectionColor());
+							if (curLine == DDSBegin.line) {
+								if (DDSBegin.line == DDSEnd.line)
+									canvas.drawRect(xo + DDSBegin.column, yb, xo + DDSEnd.column, yb + LineHeight, ColorPaint);
+								else
+									canvas.drawRect(xo + DDSBegin.column, yb, x, yb + LineHeight, ColorPaint);
+							} else if (curLine == DDSEnd.line)
+								canvas.drawRect(xo, yb, xo + DDSEnd.column, yb + LineHeight, ColorPaint);
+							else if (curLine > DDSBegin.line && curLine < DDSEnd.line)
+								canvas.drawRect(xo, yb, x, yb + LineHeight, ColorPaint);
+						}
+						XStart = x = xo;
+						++curLine;
+						if ((y += LineHeight) >= bottom) break LineDraw;
+					}
+				}
+				if (showSelecting) {
+					final float yb = y - YOffset - _LinePaddingTop;
 					ColorPaint.setColor(_Theme.getSelectionColor());
-					canvas.drawRect(xo, y - YOffset - _LinePaddingTop, x, y - YOffset + TextHeight + _LinePaddingBottom, ColorPaint);
+					if (curLine == DDSBegin.line) {
+						if (DDSBegin.line == DDSEnd.line)
+							canvas.drawRect(xo + DDSBegin.column, yb, xo + DDSEnd.column, yb + LineHeight, ColorPaint);
+						else
+							canvas.drawRect(xo + DDSBegin.column, yb, x, yb + LineHeight, ColorPaint);
+					} else if (curLine == DDSEnd.line)
+						canvas.drawRect(xo, yb, xo + DDSEnd.column, yb + LineHeight, ColorPaint);
+					else if (curLine > DDSBegin.line && curLine < DDSEnd.line)
+						canvas.drawRect(xo, yb, x, yb + LineHeight, ColorPaint);
+				}
+				canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
+			} else {
+				tot = 0;
+				for (x = XStart; i < en && x <= right; i++) {
+					if (i + sp == parseTarget) {
+						canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
+						XStart = x;
+						tot = 0;
+						ContentPaint.setColor(_Theme.getTypeColor(_Lexer.D[parseTot]));
+						++parseTot;
+						if (parseTot <= _Lexer.DS[0]) parseTarget = _Lexer.DS[parseTot];
+					}
+					if ((TMP[tot] = cs[i]) == '\t') {
+						canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
+						XStart = x;
+						tot = 0;
+						XStart += _CharWidths[CHAR_TAB];
+						x += _CharWidths[CHAR_TAB];
+					} else
+						x += getCharWidth(TMP[tot++]);
+				}
+				canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
+				if (showSelecting) {
+					if (line == _S.begin.line) SBeginLineEnd = x;
+					else if (line > _S.begin.line && line < _S.end.line) {
+						ColorPaint.setColor(_Theme.getSelectionColor());
+						canvas.drawRect(xo, y - YOffset - _LinePaddingTop, x, y - YOffset + TextHeight + _LinePaddingBottom, ColorPaint);
+					}
 				}
 			}
-			if ((y += LineHeight) >= bottom)
-				break;
 		}
 		if (showCursor) {
 			ColorPaint.setColor(_Theme.getCursorLineColor());
 			ColorPaint.setStrokeWidth(_CursorWidth);
-			float sty = LineHeight * (C.line + 1);
+			final float sty = LineHeight * (DDC.line + 1);
 			if (_CurrentlyShowCursorLine && _ShowCursorLine)
-				canvas.drawLine(xo + _CursorHorizonOffset, sty - LineHeight, xo + _CursorHorizonOffset, sty, ColorPaint);
-			_Indicator.draw(canvas, xo + _CursorHorizonOffset, sty, Indicator.TYPE_NORMAL);
+				canvas.drawLine(xo + DDC.column, sty - LineHeight, xo + DDC.column, sty, ColorPaint);
+			_Indicator.draw(canvas, xo + DDC.column, sty, Indicator.TYPE_NORMAL);
 		} else if (showSelecting) {
-			float sty = LineHeight * (_S.begin.line + 1);
-			if (_S.begin.line == _S.end.line) {
-				ColorPaint.setColor(_Theme.getSelectionColor());
-				canvas.drawRect(xo + _SStartHorizonOffset, sty - LineHeight, xo + _SEndHorizonOffset, sty, ColorPaint);
-			} else {
-				float eny = LineHeight * (_S.end.line + 1);
-				ColorPaint.setColor(_Theme.getSelectionColor());
-				if (SStartLineEnd != -1)
-					canvas.drawRect(xo + _SStartHorizonOffset, sty - LineHeight, SStartLineEnd, sty, ColorPaint);
-				canvas.drawRect(xo, eny - LineHeight, xo + _SEndHorizonOffset, eny, ColorPaint);
+			final float sty = LineHeight * (DDSBegin.line + 1);
+			final float eny = LineHeight * (DDSEnd.line + 1);
+			if (!spl) {
+				if (_S.begin.line == _S.end.line) {
+					ColorPaint.setColor(_Theme.getSelectionColor());
+					canvas.drawRect(xo + DDSBegin.column, sty - LineHeight, xo + DDSEnd.column, sty, ColorPaint);
+				} else {
+					ColorPaint.setColor(_Theme.getSelectionColor());
+					if (SBeginLineEnd != -1)
+						canvas.drawRect(xo + DDSBegin.column, sty - LineHeight, SBeginLineEnd, sty, ColorPaint);
+					canvas.drawRect(xo, eny - LineHeight, xo + DDSEnd.column, eny, ColorPaint);
+				}
 			}
-			_Indicator.draw(canvas, xo + _SStartHorizonOffset, sty, Indicator.TYPE_LEFT);
-			_Indicator.draw(canvas, xo + _SEndHorizonOffset, LineHeight * (_S.end.line + 1), Indicator.TYPE_RIGHT);
+			_Indicator.draw(canvas, xo + DDSBegin.column, sty, Indicator.TYPE_LEFT);
+			_Indicator.draw(canvas, xo + DDSEnd.column, eny, Indicator.TYPE_RIGHT);
 		}
 		_SlideBar.draw(canvas);
 	}
@@ -1205,20 +1295,25 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 		x -= _ContentLeftPadding;
 		if (_ShowLineNumber) x -= (LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH);
 		if (isRangeSelecting()) {
-			if (_Indicator.isTouched(x - _SStartHorizonOffset, y - LineHeight * (_S.begin.line + 1), Indicator.TYPE_LEFT)) {
+			final float sty = LineHeight * (DDSBegin.line + 1);
+			final float eny = LineHeight * (DDSEnd.line + 1);
+			if (_Indicator.isTouched(x - DDSBegin.column, y - sty, Indicator.TYPE_LEFT)) {
 				_lastX = ori;
-				_lastY = LineHeight * (_S.begin.line + 1) - LineHeight * 0.5f;
+				_lastY = sty - LineHeight * 0.5f;
 				return Indicator.TYPE_LEFT;
 			}
-			if (_Indicator.isTouched(x - _SEndHorizonOffset, y - LineHeight * (_S.end.line + 1), Indicator.TYPE_RIGHT)) {
+			if (_Indicator.isTouched(x - DDSEnd.column, y - eny, Indicator.TYPE_RIGHT)) {
 				_lastX = ori;
-				_lastY = LineHeight * (_S.end.line + 1) - LineHeight * 0.5f;
+				_lastY = eny - LineHeight * 0.5f;
 				return Indicator.TYPE_RIGHT;
 			}
-		} else if (_Indicator.isTouched(x - _CursorHorizonOffset, y - LineHeight * (C.line + 1), Indicator.TYPE_NORMAL)) {
-			_lastX = ori;
-			_lastY = LineHeight * (C.line + 1) - LineHeight * 0.5f;
-			return Indicator.TYPE_NORMAL;
+		} else {
+			final float sty = LineHeight * (DDC.line + 1);
+			if (_Indicator.isTouched(x - DDC.column, y - sty, Indicator.TYPE_NORMAL)) {
+				_lastX = ori;
+				_lastY = sty - LineHeight * 0.5f;
+				return Indicator.TYPE_NORMAL;
+			}
 		}
 		return Indicator.TYPE_NONE;
 	}
@@ -1292,6 +1387,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 		LineHeight = TextHeight + _LinePaddingTop + _LinePaddingBottom;
 		_Indicator.setHeight(TextHeight);
 		clearCharWidthCache();
+		SL.onUpdate();
 		onSelectionUpdate();
 		onLineChange();
 		requestLayout();
@@ -1299,7 +1395,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	}
 
 	protected void onLineChange() {
-		ContentHeight = (int) (LineHeight * L.size());
+		ContentHeight = (int) (LineHeight * SL.getTotalCount());
 		_YScrollRange = Math.max(ContentHeight - getHeight(), 0);
 		if (LineNumberPaint != null)
 			LineNumberWidth = LineNumberPaint.measureText("9") * ((int) Math.log10(L.size()) + 1);
@@ -1323,24 +1419,11 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 			else _SelectListener.onSelect(new RangeSelection<>(C));
 		}
 		if (!RS) {
+			DDC = SL.getDisplayCursor(C);
 			makeCursorVisible(C);
-			_CursorHorizonOffset = 0;
-			final char[] cs = S.getRawChars()[C.line];
-			final int col = C.column;
-			for (int i = 0; i < col; i++) _CursorHorizonOffset += getCharWidth(cs[i]);
 		} else {
-			{
-				_SStartHorizonOffset = 0;
-				final char[] cs = S.getRawChars()[_S.begin.line];
-				final int col = _S.begin.column;
-				for (int i = 0; i < col; i++) _SStartHorizonOffset += getCharWidth(cs[i]);
-			}
-			{
-				_SEndHorizonOffset = 0;
-				final char[] cs = S.getRawChars()[_S.end.line];
-				final int col = _S.end.column;
-				for (int i = 0; i < col; i++) _SEndHorizonOffset += getCharWidth(cs[i]);
-			}
+			DDSBegin = SL.getDisplayCursor(_S.begin);
+			DDSEnd = SL.getDisplayCursor(_S.end);
 			makeCursorVisible(_S.end);
 		}
 		if (_Editable && _IMM != null) {
@@ -1351,7 +1434,7 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 				sen = S.Cursor2Index(_S.end);
 			} else {
 				sst = sen = getCursorPosition();
-				float top = TextHeight * (C.line - 1);
+				float top = LineHeight * SL.getLineDisplayStart(C.line);
 				float xo = (_ShowLineNumber ? LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH : 0) + _ContentLeftPadding;
 //				builder.setInsertionMarkerLocation(xo + _CursorHorizonOffset, top, top + YOffset, top + TextHeight, CursorAnchorInfo.FLAG_HAS_VISIBLE_REGION);
 			}
@@ -1372,7 +1455,6 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 			_ComposingStart = null;
 	}
 
-
 	// --------------------------
 	// -----Temporary Fields-----
 	// --------------------------
@@ -1381,9 +1463,9 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 	private char[] TMP = new char[1024];
 	private char[] TMP2 = new char[1];
 
-	// -----------------------
-	// -----Inner Classes-----
-	// -----------------------
+// -----------------------
+// -----Inner Classes-----
+// -----------------------
 
 	public interface EventHandler {
 		boolean handleEvent(MEdit edit, MotionEvent event);
@@ -1675,11 +1757,13 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 			this.parent = parent;
 		}
 
-		abstract void onSchemeChange();
+		public abstract float getMaxWidth();
 
-		abstract void draw(Canvas canvas);
+		public abstract void onSchemeChange();
 
-		abstract boolean handleEvent(MotionEvent event);
+		public abstract void draw(Canvas canvas);
+
+		public abstract boolean handleEvent(MotionEvent event);
 	}
 
 	public static class MaterialSlideBar extends SlideBar {
@@ -1699,8 +1783,13 @@ public class MEdit extends View implements Runnable, LineManager.LineChangeListe
 		}
 
 		@Override
+		public float getMaxWidth() {
+			return EXPAND_WIDTH;
+		}
+
+		@Override
 		public void onSchemeChange() {
-			mp.setColor(parent._Theme.getSlideBarColor());
+			mp.setColor(0xC4FFFFFF & parent._Theme.getSlideBarColor());
 		}
 
 		@Override
