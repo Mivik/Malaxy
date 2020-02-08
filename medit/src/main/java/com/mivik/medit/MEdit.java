@@ -39,7 +39,7 @@ import static com.mivik.malax.BaseMalax.Cursor;
 public class MEdit extends View implements
 		SplitLineManager.UpdateListener,
 		ViewTreeObserver.OnGlobalLayoutListener,
-		Runnable, LineManager.LineChangeListener,
+		Runnable,
 		WrappedEditable.CursorListener<Cursor> {
 	// --------------------
 	// -----Constants------
@@ -165,7 +165,7 @@ public class MEdit extends View implements
 	}
 
 	public float getLineWidth() {
-		return getWidth() - getLeftOfLine() - _SlideBar.getMaxWidth();
+		return getWidth() - getLeftOfLine();
 	}
 
 	public void setSplitLineEnabled(boolean flag) {
@@ -224,7 +224,6 @@ public class MEdit extends View implements
 				S.addEditActionListener(one);
 		}
 		L = S.getLineManager();
-		L.setLineChangeListener(this);
 		_S = new RangeSelection<>(S, 0, 0);
 		_Lexer = S.getLexer();
 		if (_Lexer == null) ContentPaint.setColor(_Theme.getTypeColor(MLexer.TYPE_PURE));
@@ -849,6 +848,7 @@ public class MEdit extends View implements
 		DDC = SL.getDisplayCursor(C);
 		DDSBegin = SL.getDisplayCursor(_S.begin);
 		DDSEnd = SL.getDisplayCursor(_S.end);
+		onLineChange();
 	}
 
 	@Override
@@ -860,11 +860,6 @@ public class MEdit extends View implements
 	@Override
 	public void onGlobalLayout() {
 		SL.onUpdate();
-	}
-
-	@Override
-	public void onLineChanged(LineManager lineManager, int ori, int cur) {
-		onLineChange();
 	}
 
 	@Override
@@ -1757,8 +1752,6 @@ public class MEdit extends View implements
 			this.parent = parent;
 		}
 
-		public abstract float getMaxWidth();
-
 		public abstract void onSchemeChange();
 
 		public abstract void draw(Canvas canvas);
@@ -1780,11 +1773,6 @@ public class MEdit extends View implements
 			mp = new Paint();
 			mp.setStyle(Paint.Style.FILL);
 			mp.setAntiAlias(false);
-		}
-
-		@Override
-		public float getMaxWidth() {
-			return EXPAND_WIDTH;
 		}
 
 		@Override

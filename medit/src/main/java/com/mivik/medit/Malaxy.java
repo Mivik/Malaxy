@@ -32,6 +32,7 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 
 	public Malaxy(Context cx, AttributeSet attrs, int defStyle) {
 		super(cx, attrs, defStyle);
+		S.setRecordAction(false);
 		setSplitLineEnabled(true);
 		setShowLineNumber(false);
 		setTheme(MalaxyTheme.getInstance());
@@ -127,7 +128,8 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 			post(new Runnable() {
 				@Override
 				public void run() {
-					ReadCursor = S.insert(ReadCursor, cs, off, len);
+					ReadCursor = S.getMalax().insert(ReadCursor, cs, off, len);
+					moveCursor(S.getEndCursor());
 					makeCursorVisible(ReadCursor);
 				}
 			});

@@ -61,8 +61,9 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 	public Cursor getOriginalCursor(Cursor x) {
 		if (!enabled) {
 			final BaseMalax malax = edit.S.getMalax();
-			final int len = malax.getLineManager().getTrimmed(x.line);
-			final char[] cs = malax.getRawChars()[x.line];
+			final int line = Math.min(malax.getLineManager().size() - 1, x.line);
+			final int len = malax.getLineManager().getTrimmed(line);
+			final char[] cs = malax.getRawChars()[line];
 			int i = 0;
 			for (float sum = -x.column; i < len; i++) {
 				if ((sum += edit.getCharWidth(cs[i])) >= 0) {
@@ -71,7 +72,7 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 					break;
 				}
 			}
-			return new Cursor(x.line, i);
+			return new Cursor(line, i);
 		}
 		final int line = findStartDrawLine(x.line);
 		final BaseMalax malax = edit.S.getMalax();
@@ -83,7 +84,7 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 		float cur = 0;
 		int i = 0;
 		if (off > 0) {
-			for (; ; i++) {
+			for (; i < len; i++) {
 				cur += edit.getCharWidth(cs[i]);
 				if (cur >= width) {
 					cur = 0;
