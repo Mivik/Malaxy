@@ -12,8 +12,6 @@ public abstract class MFragment {
 
 	public abstract View getView();
 
-	public abstract Object getTag();
-
 	public void onAttach() {
 	}
 

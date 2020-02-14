@@ -1,5 +1,6 @@
 package com.mivik.malaxy;
 
+import android.os.Binder;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -47,10 +48,8 @@ public final class CrashHandler implements Thread.UncaughtExceptionHandler {
 					try {
 						Looper.loop();
 					} catch (Throwable e) {
-//                        Binder.clearCallingIdentity();
-						if (e instanceof ExitException) {
-							return;
-						}
+						Binder.clearCallingIdentity();
+						if (e instanceof ExitException) return;
 						if (_Listener != null) _Listener.onCrash(Looper.getMainLooper().getThread(), e);
 					}
 				}

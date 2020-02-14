@@ -27,14 +27,14 @@ public class FindReplaceDialog extends AlertDialog {
 
 	public FindReplaceDialog(MEdit edit) {
 		super(edit.getContext());
-		setTitle("查找替换");
+		setTitle(R.string.title_find_or_replace);
 		setCancelable(true);
 		setCanceledOnTouchOutside(true);
 		D = edit;
 		EditFind = new HintEditText(getContext());
-		EditFind.setHint("查找内容");
+		EditFind.setHint(getContext().getString(R.string.dialog_find_content));
 		EditReplace = new HintEditText(getContext());
-		EditReplace.setHint("替换内容");
+		EditReplace.setHint(getContext().getString(R.string.dialog_replace_content));
 		Layout = new LinearLayoutCompat(getContext());
 		Layout.setOrientation(LinearLayoutCompat.VERTICAL);
 		Layout.addView(EditFind);
@@ -42,16 +42,16 @@ public class FindReplaceDialog extends AlertDialog {
 		_FHelper = new FindActionModeHelper(D);
 		_RHelper = new ReplaceActionModeHelper(D);
 		_Replacing = new LoadingDialog(D.getContext());
-		_Replacing.setMessage("替换中");
+		_Replacing.setMessage(R.string.dialog_replace_replacing);
 		setView(Layout);
-		setButton(DialogInterface.BUTTON_POSITIVE, "查找", new OnClickListener() {
+		setButton(DialogInterface.BUTTON_POSITIVE, getContext().getString(R.string.dialog_find), new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				String s = EditFind.getText().toString();
 				if (s.length() == 0) return;
 				_FHelper.ss = D.find(s.toCharArray());
 				if (_FHelper.ss.length == 0) {
-					UI.toast(D.getContext(), "没有找到内容");
+					UI.toast(D.getContext(), getContext().getString(R.string.dialog_find_or_replace_text_not_found));
 					return;
 				}
 				_FHelper.Q = s.toCharArray();
@@ -64,7 +64,7 @@ public class FindReplaceDialog extends AlertDialog {
 				_FHelper.show();
 			}
 		});
-		setButton(DialogInterface.BUTTON_NEGATIVE, "替换", new OnClickListener() {
+		setButton(DialogInterface.BUTTON_NEGATIVE, getContext().getString(R.string.dialog_replace), new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				String s = EditFind.getText().toString();
@@ -85,7 +85,7 @@ public class FindReplaceDialog extends AlertDialog {
 						if (D.equal(i.cursor, Q)) {
 							break F;
 						}
-					UI.toast(D.getContext(), "没有找到内容");
+					UI.toast(D.getContext(), getContext().getString(R.string.dialog_find_or_replace_text_not_found));
 					return;
 				}
 				_RHelper.ind = i.cursor.clone();
@@ -93,7 +93,7 @@ public class FindReplaceDialog extends AlertDialog {
 				_RHelper.show();
 			}
 		});
-		setButton(DialogInterface.BUTTON_NEUTRAL, "全部替换", new OnClickListener() {
+		setButton(DialogInterface.BUTTON_NEUTRAL, getContext().getString(R.string.dialog_replace_replace_all), new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				_Replacing.show();
@@ -125,7 +125,7 @@ public class FindReplaceDialog extends AlertDialog {
 								time++;
 							}
 						ncs.append(D.S.subStringBuilder(new RangeSelection<>(last, D.S.getEndCursor())));
-						final String msg = "已替换" + time + "处";
+						final String msg = String.format(getContext().getString(R.string.dialog_replace_replaced), time);
 						UI.onUI(new Runnable() {
 							@Override
 							public void run() {
@@ -167,10 +167,10 @@ public class FindReplaceDialog extends AlertDialog {
 					@Override
 					public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 						Content.onStartActionMode(_ActionMode = mode);
-						mode.setTitle("查找");
+						mode.setTitle(R.string.dialog_find);
 						mode.setSubtitle(new String(Q));
-						menu.add(0, 0, 0, "后退").setIcon(UI.tintDrawable(cx, R.mipmap.icon_left, UI.IconColor)).setShowAsActionFlags(2);
-						menu.add(0, 1, 0, "前进").setIcon(UI.tintDrawable(cx, R.mipmap.icon_right, UI.IconColor)).setShowAsActionFlags(2);
+						menu.add(0, 0, 0, R.string.dialog_find_back).setIcon(UI.tintDrawable(cx, R.mipmap.icon_left, UI.IconColor)).setShowAsActionFlags(2);
+						menu.add(0, 1, 0, R.string.dialog_find_forward).setIcon(UI.tintDrawable(cx, R.mipmap.icon_right, UI.IconColor)).setShowAsActionFlags(2);
 						return true;
 					}
 
@@ -235,12 +235,11 @@ public class FindReplaceDialog extends AlertDialog {
 					@Override
 					public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 						Content.onStartActionMode(_ActionMode = mode);
-						mode.setTitle("替换");
-						StringBuffer buf = new StringBuffer();
-						mode.setSubtitle(buf.append(Q).append(" -> ").append(T).toString());
-						menu.add(0, 0, 0, "后退").setIcon(UI.tintDrawable(cx, R.mipmap.icon_left, UI.IconColor)).setShowAsActionFlags(2);
-						menu.add(0, 1, 0, "替换").setIcon(UI.tintDrawable(cx, R.mipmap.icon_right, UI.IconColor)).setShowAsActionFlags(2);
-						menu.add(0, 2, 0, "跳过").setIcon(UI.tintDrawable(cx, R.mipmap.icon_skip, UI.IconColor)).setShowAsActionFlags(2);
+						mode.setTitle(R.string.dialog_replace);
+						mode.setSubtitle(getStateString());
+						menu.add(0, 0, 0, R.string.dialog_replace_back).setIcon(UI.tintDrawable(cx, R.mipmap.icon_left, UI.IconColor)).setShowAsActionFlags(2);
+						menu.add(0, 1, 0, R.string.dialog_replace_replace).setIcon(UI.tintDrawable(cx, R.mipmap.icon_right, UI.IconColor)).setShowAsActionFlags(2);
+						menu.add(0, 2, 0, R.string.dialog_replace_skip).setIcon(UI.tintDrawable(cx, R.mipmap.icon_skip, UI.IconColor)).setShowAsActionFlags(2);
 						return true;
 					}
 
@@ -296,17 +295,18 @@ public class FindReplaceDialog extends AlertDialog {
 					}
 
 					@Override
-					public void onDestroyActionMode(ActionMode p1) {
+					public void onDestroyActionMode(ActionMode mode) {
 						Content.finishSelecting();
 						Content.onHideActionMode();
 						_ActionMode = null;
 					}
 				});
-			} else {
-				StringBuffer buf = new StringBuffer();
-				_ActionMode.setSubtitle(buf.append(Q).append(" -> ").append(T).toString());
-			}
+			} else _ActionMode.setSubtitle(getStateString());
 			Content.setSelectionRange(Content.S.fromBegin(ind, Q.length));
+		}
+
+		private String getStateString() {
+			return String.format(cx.getString(R.string.dialog_replace_state_text), new String(Q), new String(T));
 		}
 
 		public void hide() {

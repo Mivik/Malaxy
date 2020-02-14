@@ -144,11 +144,6 @@ public class SettingFragment extends MFragment {
 		return view;
 	}
 
-	@Override
-	public Object getTag() {
-		return SettingFragment.class;
-	}
-
 	public static class GroupView extends AppCompatTextView {
 		public GroupView(Context cx) {
 			this(cx, null);

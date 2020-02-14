@@ -1,0 +1,99 @@
+<resources>
+	<string name="app_name">Malaxy</string>
+	<array name="app_permissions">
+		<item>android.permission.WRITE_EXTERNAL_STORAGE</item>
+	</array>
+	<array name="app_permission_explanations">
+		<item>Malaxy需要存储权限来访问你手机上的文件</item>
+	</array>
+
+	<string name="title_settings">设置</string>
+	<string name="title_find_or_replace">查找替换</string>
+
+	<string name="drawer_open">展开</string>
+	<string name="drawer_close">收起</string>
+
+	<string name="dialog_note">提示</string>
+	<string name="dialog_close_file">关闭</string>
+	<string name="dialog_sure_to_close_unsaved_file">你还没有保存，确定要关闭吗？</string>
+	<string name="dialog_sure_to_exit_with_file_unsaved">你还有文件没有保存，确定要退出吗？</string>
+	<string name="dialog_save_and_close_file">保存并关闭</string>
+	<string name="dialog_loading_file">加载文件中…</string>
+	<string name="dialog_exit">退出</string>
+	<string name="dialog_replace_replacing">替换中…</string>
+	<string name="dialog_find">查找</string>
+	<string name="dialog_find_content">查找内容</string>
+	<string name="dialog_replace_content">替换内容</string>
+	<string name="dialog_replace">替换</string>
+	<string name="dialog_find_or_replace_text_not_found">没有找到内容</string>
+	<string name="dialog_replace_replace_all">全部替换</string>
+	<string name="dialog_replace_replaced">已替换%d处</string>
+	<string name="dialog_find_back">后退</string>
+	<string name="dialog_find_forward">前进</string>
+	<string name="dialog_replace_back">后退</string>
+	<string name="dialog_replace_replace">替换</string>
+	<string name="dialog_replace_skip">跳过</string>
+	<string name="dialog_replace_state_text">%s -> %s</string>
+	<string name="dialog_cancel">取消</string>
+	<string name="dialog_confirm">确定</string>
+	<string name="dialog_text_cannot_be_empty">不能为空</string>
+	<string name="dialog_text_contains_illegal_characters">含有非法字符</string>
+	<string name="dialog_permission_request">权限需求</string>
+	<string name="dialog_encoding_auto">自动识别编码</string>
+
+	<string name="menu_file">文件</string>
+	<string name="menu_file_new">新建</string>
+	<string name="menu_file_open">打开</string>
+	<string name="menu_file_save">保存</string>
+	<string name="menu_file_save_as">另存为</string>
+	<string name="menu_edit">编辑</string>
+	<string name="menu_edit_undo">撤销</string>
+	<string name="menu_edit_redo">重做</string>
+	<string name="menu_edit_find_or_replace">查找/替换</string>
+	<string name="menu_settings">设置</string>
+	<string name="menu_close">关闭</string>
+	<string name="menu_file_encoding">编码</string>
+	<string name="menu_file_encoding_reload_with_new_encoding">使用新编码打开</string>
+	<string name="menu_file_encoding_choose_save_encoding">选择保存编码</string>
+
+	<string name="lexer_name_auto">自动选择</string>
+	<string name="lexer_name_none">无</string>
+
+	<string name="font_system_default">默认</string>
+	<string name="font_system_monospace">等宽</string>
+	<string name="font_system_bold">粗体</string>
+
+	<string name="settings_editor">编辑器</string>
+	<string name="settings_editor_font">设置字体</string>
+	<string name="settings_editor_font_description">设定编辑器使用的字体</string>
+	<string name="settings_editor_choose_font">选择字体</string>
+	<string name="settings_editor_font_size">设置字体大小</string>
+	<string name="settings_editor_font_size_description">设定编辑器的字体大小</string>
+	<string name="settings_editor_font_size_size">字体大小</string>
+	<string name="settings_editor_highlight">切换高亮</string>
+	<string name="settings_editor_highlight_description">切换编辑器所使用的高亮方式</string>
+	<string name="settings_editor_word_wrapping">自动换行</string>
+	<string name="settings_editor_word_wrapping_description">设置编辑器是否将一行自动分割为多行</string>
+	<string name="settings_editor_show_linenumber">显示行号</string>
+	<string name="settings_editor_show_linenumber_description">设定编辑器是否显示行号</string>
+	<string name="settings_editor_dark_mode">夜间主题</string>
+	<string name="settings_editor_dark_mode_description">设定编辑器是否使用夜间主题</string>
+	<string name="settings_editor_font_set">已设置字体</string>
+	<array name="settings_editor_font_types">
+		<item>系统字体</item>
+		<item>预设字体</item>
+		<item>自定义字体</item>
+	</array>
+
+	<string name="choose_file_goto_parent_directory">上一层</string>
+	<string name="choose_file_choose_directory">选择文件夹</string>
+	<string name="choose_file_filename">文件名字</string>
+	<string name="choose_file_file_exists">文件已存在</string>
+	<string name="choose_file_failed_to_create_file">创建文件失败</string>
+	<string name="choose_file_sure_to_replace_file">你确定要覆盖此文件吗？</string>
+	<string name="choose_file_set_as_homepage">设为首页</string>
+	<string name="choose_file_goto_homepage">回到首页</string>
+	<string name="choose_file_add_bookmark">添加书签</string>
+	<string name="choose_file_sure_to_remove_bookmark">你确定要删除此书签吗？</string>
+
+</resources>

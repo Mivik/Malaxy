@@ -1,6 +1,99 @@
 <resources>
 	<string name="app_name">Malaxy</string>
-	<string name="title_settings">设置</string>
-	<string name="drawer_open">展开</string>
-	<string name="drawer_close">收起</string>
+	<array name="app_permissions">
+		<item>android.permission.WRITE_EXTERNAL_STORAGE</item>
+	</array>
+	<array name="app_permission_explanations">
+		<item>Malaxy need the permission to access your external storage</item>
+	</array>
+
+	<string name="title_settings">Settings</string>
+	<string name="title_find_or_replace">Find/Replace</string>
+
+	<string name="drawer_open">Open</string>
+	<string name="drawer_close">Close</string>
+
+	<string name="dialog_note">Prompt</string>
+	<string name="dialog_close_file">CLose</string>
+	<string name="dialog_sure_to_close_unsaved_file">You haven\'t save your file yet, are you sure to close the file?
+	</string>
+	<string name="dialog_sure_to_exit_with_file_unsaved">You have unsaved file(s), are you sure to exit Malaxy?</string>
+	<string name="dialog_save_and_close_file">Close and Exit</string>
+	<string name="dialog_loading_file">Loading file…</string>
+	<string name="dialog_exit">Exit</string>
+	<string name="dialog_replace_replacing">Replacing…</string>
+	<string name="dialog_find">Find</string>
+	<string name="dialog_find_content">Find Text</string>
+	<string name="dialog_replace_content">Replace Text</string>
+	<string name="dialog_replace">Replace</string>
+	<string name="dialog_find_or_replace_text_not_found">Found nothing</string>
+	<string name="dialog_replace_replace_all">Replace All</string>
+	<string name="dialog_replace_replaced">Replaced %d matches</string>
+	<string name="dialog_find_back">Back</string>
+	<string name="dialog_find_forward">Forward</string>
+	<string name="dialog_replace_back">Back</string>
+	<string name="dialog_replace_replace">Replace</string>
+	<string name="dialog_replace_skip">Skip</string>
+	<string name="dialog_replace_state_text">%s -> %s</string>
+	<string name="dialog_cancel">Cancel</string>
+	<string name="dialog_confirm">Confirm</string>
+	<string name="dialog_text_cannot_be_empty">Text cannot be empty.</string>
+	<string name="dialog_text_contains_illegal_characters">Text contains illegal characters.</string>
+	<string name="dialog_permission_request">Permission Request</string>
+	<string name="dialog_encoding_auto">Choose Automatically</string>
+
+	<string name="menu_file">File</string>
+	<string name="menu_file_new">New</string>
+	<string name="menu_file_open">Open</string>
+	<string name="menu_file_save">Save</string>
+	<string name="menu_file_save_as">Save As …</string>
+	<string name="menu_edit">Edit</string>
+	<string name="menu_edit_undo">Undo</string>
+	<string name="menu_edit_redo">Redo</string>
+	<string name="menu_edit_find_or_replace">Find/Replace</string>
+	<string name="menu_settings">Settings</string>
+	<string name="menu_close">Close</string>
+	<string name="menu_file_encoding">Encoding</string>
+	<string name="menu_file_encoding_reload_with_new_encoding">Open With New Encoding</string>
+	<string name="menu_file_encoding_choose_save_encoding">Choose Save Encoding</string>
+
+	<string name="lexer_name_auto">Choose Automatically</string>
+	<string name="lexer_name_none">None</string>
+
+	<string name="font_system_default">Default</string>
+	<string name="font_system_monospace">Monospace</string>
+	<string name="font_system_bold">Bold</string>
+
+	<string name="settings_editor">Editor</string>
+	<string name="settings_editor_font">Font</string>
+	<string name="settings_editor_font_description">Set the font which editor uses</string>
+	<string name="settings_editor_choose_font">Choose Font</string>
+	<string name="settings_editor_font_size">Font Size</string>
+	<string name="settings_editor_font_size_description">Determine which font size the editor should use</string>
+	<string name="settings_editor_font_size_size">Font Size</string>
+	<string name="settings_editor_highlight">Highlight</string>
+	<string name="settings_editor_highlight_description">Set the editor\'s highlight method</string>
+	<string name="settings_editor_word_wrapping">Word Wrap</string>
+	<string name="settings_editor_word_wrapping_description">Set whether the editor should enable word wrapping</string>
+	<string name="settings_editor_show_linenumber">Show Linenumber</string>
+	<string name="settings_editor_show_linenumber_description">Should the editor display linenumber?</string>
+	<string name="settings_editor_dark_mode">Dark Mode</string>
+	<string name="settings_editor_dark_mode_description">Switch between light/dark mode</string>
+	<string name="settings_editor_font_set">Font set</string>
+	<array name="settings_editor_font_types">
+		<item>System Fonts</item>
+		<item>Preset Fonts</item>
+		<item>Custom Fonts</item>
+	</array>
+
+	<string name="choose_file_goto_parent_directory">Goto Parent Directory</string>
+	<string name="choose_file_choose_directory">Choose Directory</string>
+	<string name="choose_file_filename">File Name</string>
+	<string name="choose_file_file_exists">File already exists</string>
+	<string name="choose_file_failed_to_create_file">Failed to create file</string>
+	<string name="choose_file_sure_to_replace_file">Are you sure to replace this file?</string>
+	<string name="choose_file_set_as_homepage">Set as Homepage</string>
+	<string name="choose_file_goto_homepage">Goto Homepage</string>
+	<string name="choose_file_add_bookmark">Add Bookmark</string>
+	<string name="choose_file_sure_to_remove_bookmark">Are you sure to remove this bookmark?</string>
 </resources>

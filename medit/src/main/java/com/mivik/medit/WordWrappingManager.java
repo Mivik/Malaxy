@@ -1,17 +1,22 @@
 package com.mivik.medit;
 
+import android.util.Log;
 import com.mivik.malax.BaseMalax;
 import com.mivik.malax.LineManager;
 
-import static com.mivik.malax.BaseMalax.Cursor;
+import java.util.Arrays;
 
-public class SplitLineManager implements BaseMalax.ContentChangeListener {
+import static com.mivik.malax.BaseMalax.Cursor;
+import static com.mivik.mlexer.MLexer.newCapacity;
+
+public class WordWrappingManager implements BaseMalax.ContentChangeListener {
 	private MEdit edit;
 	private int[] S = new int[16];
 	private boolean enabled = true;
 	private UpdateListener listener;
+	private float lstWidth = -1;
 
-	public SplitLineManager(MEdit edit) {
+	public WordWrappingManager(MEdit edit) {
 		this.edit = edit;
 	}
 
@@ -26,6 +31,7 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 	public void setEnabled(boolean flag) {
 		if (this.enabled == flag) return;
 		if (this.enabled = flag) onUpdate();
+		else lstWidth = -1;
 	}
 
 	public boolean isEnabled() {
@@ -124,15 +130,21 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 	}
 
 	public void onUpdate() {
-		if (!enabled) return;
+		if (!enabled) {
+			if (listener != null) listener.onUpdate();
+			return;
+		}
+		final float newWidth = edit.getLineWidth();
+		if (newWidth < 0) {
+			if (listener != null) listener.onUpdate();
+			return;
+		}
+		if (Math.abs(newWidth - lstWidth) < 0.1) return;
+		lstWidth = newWidth;
 		final LineManager line = edit.S.getLineManager();
 		final int tot = line.size();
 		if (tot == 0) return;
-		if (tot > S.length) {
-			int[] dst = new int[tot];
-			System.arraycopy(S, 0, dst, 0, S.length);
-			S = dst;
-		}
+		if (tot > S.length) S = Arrays.copyOf(S, newCapacity(S.length, tot));
 		S[0] = calcLineDisplayCount(0);
 		for (int i = 1; i < tot; i++)
 			S[i] = calcLineDisplayCount(i) + S[i - 1];
@@ -161,6 +173,7 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 		final int len = malax.getLineManager().getTrimmed(line);
 		final char[] cs = malax.getRawChars()[line];
 		final float width = edit.getLineWidth();
+		Log.i("MEdit", "measure with width " + width);
 		if (width <= 0) return 0;
 		float cur = 0;
 		int ret = 1;
@@ -177,39 +190,49 @@ public class SplitLineManager implements BaseMalax.ContentChangeListener {
 
 	@Override
 	public void onExpand(int st, int en) {
-		if (!enabled) return;
+		if (!enabled) {
+			if (listener != null) listener.onUpdate();
+			return;
+		}
 		final LineManager line = edit.S.getLineManager();
 		final int tot = line.size();
 		int[] dst;
 		if (tot > S.length) {
-			dst = new int[tot];
+			dst = new int[newCapacity(S.length, tot)];
 			System.arraycopy(S, 0, dst, 0, st);
 		} else dst = S;
-		final int del = en - st + 1;
+		final int del = en - st;
 		for (int i = tot - 1; i > en; i--) dst[i] = S[i - del];
 		int base = getLineDisplayStart(st);
+		final int zzz = S[st];
 		for (int i = st; i <= en; i++)
 			dst[i] = base += calcLineDisplayCount(i);
-		base -= getLineDisplayStart(st);
-		for (int i = en; i < tot; i++) dst[i] += base;
+		base -= zzz;
+		for (int i = en + 1; i < tot; i++) dst[i] += base;
 		S = dst;
 		if (listener != null) listener.onUpdate();
 	}
 
 	@Override
 	public void onMerge(int st, int en) {
-		if (!enabled) return;
+		if (!enabled) {
+			if (listener != null) listener.onUpdate();
+			return;
+		}
 		final LineManager line = edit.S.getLineManager();
 		final int tot = line.size();
 		final int del = en - st;
-		final int len = S[en] - getLineDisplayStart(st);
+		final int len = S[en] - getLineDisplayStart(st) - calcLineDisplayCount(st);
 		for (int i = st; i < tot; i++) S[i] = S[i + del] - len;
 		if (listener != null) listener.onUpdate();
 	}
 
 	@Override
 	public void onLineUpdated(int x) {
-		if (!enabled) return;
+		if (!enabled) {
+			if (listener != null) listener.onUpdate();
+			return;
+		}
 		final int tot = edit.S.getLineManager().size();
 		final int del = calcLineDisplayCount(x) - getLineDisplayCount(x);
 		if (del == 0) return;

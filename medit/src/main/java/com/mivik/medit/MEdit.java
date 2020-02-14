@@ -37,10 +37,22 @@ import java.util.Set;
 import static com.mivik.malax.BaseMalax.Cursor;
 
 public class MEdit extends View implements
-		SplitLineManager.UpdateListener,
+		WordWrappingManager.UpdateListener,
 		ViewTreeObserver.OnGlobalLayoutListener,
 		Runnable,
 		WrappedEditable.CursorListener<Cursor> {
+
+	public static final boolean USE_COMPAT;
+
+	static {
+		boolean compat = false;
+		try {
+			Class.forName("androidx.appcompat.app.AppCompatActivity");
+			compat = true;
+		} catch (ClassNotFoundException e) {
+		}
+		USE_COMPAT = compat;
+	}
 	// --------------------
 	// -----Constants------
 	// --------------------
@@ -101,13 +113,13 @@ public class MEdit extends View implements
 	private final byte[] _BlinkLock = new byte[0];
 	private Handler _Handler = new Handler();
 	private SelectListener _SelectListener;
-	private ClipboardActionModeHelper _CBHelper;
+	private final ClipboardActionModeHelper _CBHelper;
 	private boolean _CBEnabled = true;
 	private ActionMode _ShowingActionMode;
 	private final Set<WrappedEditable.EditActionListener> _EditActionListeners = new HashSet<>();
 	private EventHandler H;
 	private boolean _HighlightLine = true;
-	private final SplitLineManager SL = new SplitLineManager(this);
+	private final WordWrappingManager WW = new WordWrappingManager(this);
 
 	// -----------------------
 	// -----Constructors------
@@ -124,8 +136,8 @@ public class MEdit extends View implements
 	public MEdit(Context cx, AttributeSet attr, int style) {
 		super(cx, attr, style);
 		getViewTreeObserver().addOnGlobalLayoutListener(this);
-		SL.setUpdateListener(this);
-		setSplitLineEnabled(false);
+		WW.setUpdateListener(this);
+		setWordWrappingEnabled(false);
 		_lastClickX = _lastClickY = 0;
 		setLayerType(View.LAYER_TYPE_HARDWARE, null);
 		Scroller = new OverScroller(getContext());
@@ -133,7 +145,8 @@ public class MEdit extends View implements
 		ViewConfiguration config = ViewConfiguration.get(cx);
 		_minFling = config.getScaledMinimumFlingVelocity();
 		_touchSlop = config.getScaledTouchSlop();
-		_CBHelper = new ClipboardActionModeHelper(this);
+		if (USE_COMPAT) _CBHelper = new ClipboardActionModeHelperCompat(this);
+		else _CBHelper = new ClipboardActionModeHelperNative(this);
 		ContentPaint = new Paint();
 		ContentPaint.setAntiAlias(true);
 		ContentPaint.setDither(false);
@@ -165,17 +178,17 @@ public class MEdit extends View implements
 	}
 
 	public float getLineWidth() {
-		return getWidth() - getLeftOfLine();
+		return getMeasuredWidth() - getLeftOfLine();
 	}
 
-	public void setSplitLineEnabled(boolean flag) {
-		SL.setEnabled(flag);
+	public void setWordWrappingEnabled(boolean flag) {
+		WW.setEnabled(flag);
 		setScrollX(0);
 		postInvalidate();
 	}
 
-	public boolean isSplitLineEnabled() {
-		return SL.isEnabled();
+	public boolean isWordWrappingEnabled() {
+		return WW.isEnabled();
 	}
 
 	public void setHighlightLine(boolean flag) {
@@ -229,8 +242,8 @@ public class MEdit extends View implements
 		if (_Lexer == null) ContentPaint.setColor(_Theme.getTypeColor(MLexer.TYPE_PURE));
 		moveCursor(S.getBeginCursor());
 		if (InputConnection != null) InputConnection.onUpdate();
-		S.setContentChangeListener(SL);
-		SL.onUpdate();
+		S.setContentChangeListener(WW);
+		WW.onUpdate();
 		onLineChange();
 		postInvalidate();
 	}
@@ -622,7 +635,7 @@ public class MEdit extends View implements
 
 	public void moveCursor(Cursor x) {
 		C.set(x);
-		DDC = SL.getDisplayCursor(C);
+		DDC = WW.getDisplayCursor(C);
 		onSelectionUpdate();
 		postInvalidate();
 	}
@@ -711,7 +724,7 @@ public class MEdit extends View implements
 	}
 
 	public void makeLineVisible(int line) {
-		float y = LineHeight * SL.getLineDisplayStart(line);
+		float y = LineHeight * WW.getLineDisplayStart(line);
 		if (getScrollY() > y) {
 			finishScrolling();
 			scrollTo(getScrollX(), (int) y);
@@ -823,7 +836,7 @@ public class MEdit extends View implements
 	}
 
 	public Cursor getCursorByPosition(float x, float y) {
-		return SL.getOriginalCursor(new Cursor(Math.max((int) (y / LineHeight), 0), (int) (x - getLeftOfLine())));
+		return WW.getOriginalCursor(new Cursor(Math.max((int) (y / LineHeight), 0), (int) (x - getLeftOfLine())));
 	}
 
 	public static boolean isSelectableChar(char c) {
@@ -845,21 +858,27 @@ public class MEdit extends View implements
 
 	@Override
 	public void onUpdate() {
-		DDC = SL.getDisplayCursor(C);
-		DDSBegin = SL.getDisplayCursor(_S.begin);
-		DDSEnd = SL.getDisplayCursor(_S.end);
+		DDC = WW.getDisplayCursor(C);
+		DDSBegin = WW.getDisplayCursor(_S.begin);
+		DDSEnd = WW.getDisplayCursor(_S.end);
 		onLineChange();
+		post(new Runnable() {
+			@Override
+			public void run() {
+				WW.onUpdate();
+			}
+		});
 	}
 
 	@Override
 	public void scrollTo(int x, int y) {
-		if (SL.isEnabled()) x = 0;
+		if (WW.isEnabled()) x = 0;
 		super.scrollTo(x, y);
 	}
 
 	@Override
 	public void onGlobalLayout() {
-		SL.onUpdate();
+		WW.onUpdate();
 	}
 
 	@Override
@@ -1080,10 +1099,10 @@ public class MEdit extends View implements
 		final float bottom = getScrollY() + getHeight() + YOffset;
 		final int right = getScrollX() + getWidth();
 		final float xo = getLeftOfLine();
-		final boolean spl = SL.isEnabled();
+		final boolean spl = WW.isEnabled();
 		final float av = getWidth() - xo;
 
-		int line = SL.findStartDrawLine(Math.max((int) (getScrollY() / LineHeight), 0));
+		int line = WW.findStartDrawLine(Math.max((int) (getScrollY() / LineHeight), 0));
 		float y;
 		float XStart, wtmp, x;
 		int i, en;
@@ -1105,7 +1124,10 @@ public class MEdit extends View implements
 		}
 		LineDraw:
 		for (; line < L.size(); line++) {
-			if ((y = LineHeight * SL.getLineDisplayStart(line) + YOffset + _LinePaddingTop) >= bottom)
+			if (line == 6) {
+				System.out.println("emm");
+			}
+			if ((y = LineHeight * WW.getLineDisplayStart(line) + YOffset + _LinePaddingTop) >= bottom)
 				break;
 			if (_ShowLineNumber)
 				canvas.drawText(Integer.toString(line + 1), LineNumberWidth, y, LineNumberPaint);
@@ -1134,7 +1156,7 @@ public class MEdit extends View implements
 					y += LineHeight;
 				}
 				tot = 0;
-				int curLine = SL.getLineDisplayStart(line);
+				int curLine = WW.getLineDisplayStart(line);
 				for (x = XStart; i < en; i++) {
 					if (i + sp == parseTarget) {
 						canvas.drawText(TMP, 0, tot, XStart, y, ContentPaint);
@@ -1382,7 +1404,7 @@ public class MEdit extends View implements
 		LineHeight = TextHeight + _LinePaddingTop + _LinePaddingBottom;
 		_Indicator.setHeight(TextHeight);
 		clearCharWidthCache();
-		SL.onUpdate();
+		WW.onUpdate();
 		onSelectionUpdate();
 		onLineChange();
 		requestLayout();
@@ -1390,10 +1412,11 @@ public class MEdit extends View implements
 	}
 
 	protected void onLineChange() {
-		ContentHeight = (int) (LineHeight * SL.getTotalCount());
+		ContentHeight = (int) (LineHeight * WW.getTotalCount());
 		_YScrollRange = Math.max(ContentHeight - getHeight(), 0);
 		if (LineNumberPaint != null)
 			LineNumberWidth = LineNumberPaint.measureText("9") * ((int) Math.log10(L.size()) + 1);
+		postInvalidate();
 	}
 
 	private void springBack() {
@@ -1414,11 +1437,11 @@ public class MEdit extends View implements
 			else _SelectListener.onSelect(new RangeSelection<>(C));
 		}
 		if (!RS) {
-			DDC = SL.getDisplayCursor(C);
+			DDC = WW.getDisplayCursor(C);
 			makeCursorVisible(C);
 		} else {
-			DDSBegin = SL.getDisplayCursor(_S.begin);
-			DDSEnd = SL.getDisplayCursor(_S.end);
+			DDSBegin = WW.getDisplayCursor(_S.begin);
+			DDSEnd = WW.getDisplayCursor(_S.end);
 			makeCursorVisible(_S.end);
 		}
 		if (_Editable && _IMM != null) {
@@ -1429,7 +1452,7 @@ public class MEdit extends View implements
 				sen = S.Cursor2Index(_S.end);
 			} else {
 				sst = sen = getCursorPosition();
-				float top = LineHeight * SL.getLineDisplayStart(C.line);
+				float top = LineHeight * WW.getLineDisplayStart(C.line);
 				float xo = (_ShowLineNumber ? LineNumberWidth + LINE_NUMBER_SPLIT_WIDTH : 0) + _ContentLeftPadding;
 //				builder.setInsertionMarkerLocation(xo + _CursorHorizonOffset, top, top + YOffset, top + TextHeight, CursorAnchorInfo.FLAG_HAS_VISIBLE_REGION);
 			}
@@ -1466,23 +1489,29 @@ public class MEdit extends View implements
 		boolean handleEvent(MEdit edit, MotionEvent event);
 	}
 
-	private static class ClipboardActionModeHelper {
+	private interface ClipboardActionModeHelper {
+		void show();
+
+		void hide();
+	}
+
+	private static class ClipboardActionModeHelperNative implements ClipboardActionModeHelper {
 		private MEdit Content;
 		private Context cx;
-		private ActionMode _ActionMode;
+		private android.view.ActionMode _ActionMode;
 
-		public ClipboardActionModeHelper(MEdit textField) {
+		public ClipboardActionModeHelperNative(MEdit textField) {
 			Content = textField;
 			cx = Content.getContext();
 		}
 
 		public void show() {
-			if (!(cx instanceof AppCompatActivity)) return;
+			if (!(cx instanceof Activity)) return;
 			if (Content._ShowingActionMode != null) return;
 			if (_ActionMode == null)
-				((AppCompatActivity) cx).startSupportActionMode(new ActionMode.Callback() {
+				((Activity) cx).startActionMode(new android.view.ActionMode.Callback() {
 					@Override
-					public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+					public boolean onCreateActionMode(android.view.ActionMode mode, Menu menu) {
 						_ActionMode = mode;
 						mode.setTitle(android.R.string.selectTextMode);
 						TypedArray array = cx.getTheme().obtainStyledAttributes(new int[]{
@@ -1514,12 +1543,12 @@ public class MEdit extends View implements
 					}
 
 					@Override
-					public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+					public boolean onPrepareActionMode(android.view.ActionMode mode, Menu menu) {
 						return false;
 					}
 
 					@Override
-					public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+					public boolean onActionItemClicked(android.view.ActionMode mode, MenuItem item) {
 						switch (item.getItemId()) {
 							case 0:
 								Content.selectAll();
@@ -1543,7 +1572,100 @@ public class MEdit extends View implements
 					}
 
 					@Override
-					public void onDestroyActionMode(ActionMode mode) {
+					public void onDestroyActionMode(android.view.ActionMode mode) {
+						Content.finishSelecting();
+						_ActionMode = null;
+					}
+				});
+		}
+
+		public void hide() {
+			if (!(cx instanceof Activity)) return;
+			if (_ActionMode != null) {
+				_ActionMode.finish();
+				_ActionMode = null;
+			}
+		}
+	}
+
+	private static class ClipboardActionModeHelperCompat implements ClipboardActionModeHelper {
+		private MEdit Content;
+		private Context cx;
+		private androidx.appcompat.view.ActionMode _ActionMode;
+
+		public ClipboardActionModeHelperCompat(MEdit textField) {
+			Content = textField;
+			cx = Content.getContext();
+		}
+
+		public void show() {
+			if (!(cx instanceof AppCompatActivity)) return;
+			if (Content._ShowingActionMode != null) return;
+			if (_ActionMode == null)
+				((AppCompatActivity) cx).startSupportActionMode(new androidx.appcompat.view.ActionMode.Callback() {
+					@Override
+					public boolean onCreateActionMode(androidx.appcompat.view.ActionMode mode, Menu menu) {
+						_ActionMode = mode;
+						mode.setTitle(android.R.string.selectTextMode);
+						TypedArray array = cx.getTheme().obtainStyledAttributes(new int[]{
+								android.R.attr.actionModeSelectAllDrawable,
+								android.R.attr.actionModeCutDrawable,
+								android.R.attr.actionModeCopyDrawable,
+								android.R.attr.actionModePasteDrawable,
+						});
+						menu.add(0, 0, 0, cx.getString(android.R.string.selectAll))
+								.setShowAsActionFlags(2)
+								.setAlphabeticShortcut('a')
+								.setIcon(array.getDrawable(0));
+						if (Content.isEditable())
+							menu.add(0, 1, 0, cx.getString(android.R.string.cut))
+									.setShowAsActionFlags(2)
+									.setAlphabeticShortcut('x')
+									.setIcon(array.getDrawable(1));
+						menu.add(0, 2, 0, cx.getString(android.R.string.copy))
+								.setShowAsActionFlags(2)
+								.setAlphabeticShortcut('c')
+								.setIcon(array.getDrawable(2));
+						if (Content.isEditable())
+							menu.add(0, 3, 0, cx.getString(android.R.string.paste))
+									.setShowAsActionFlags(2)
+									.setAlphabeticShortcut('v')
+									.setIcon(array.getDrawable(3));
+						array.recycle();
+						return true;
+					}
+
+					@Override
+					public boolean onPrepareActionMode(androidx.appcompat.view.ActionMode mode, Menu menu) {
+						return false;
+					}
+
+					@Override
+					public boolean onActionItemClicked(androidx.appcompat.view.ActionMode mode, MenuItem item) {
+						switch (item.getItemId()) {
+							case 0:
+								Content.selectAll();
+								break;
+							case 1:
+								Content.cut();
+								mode.finish();
+								break;
+							case 2:
+								Content.copy();
+								mode.finish();
+								break;
+							case 3:
+								Content.paste();
+								mode.finish();
+								break;
+							default:
+								return false;
+						}
+						return true;
+					}
+
+					@Override
+					public void onDestroyActionMode(androidx.appcompat.view.ActionMode mode) {
 						Content.finishSelecting();
 						_ActionMode = null;
 					}

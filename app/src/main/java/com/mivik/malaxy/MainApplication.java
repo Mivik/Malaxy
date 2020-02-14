@@ -10,19 +10,22 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 public class MainApplication extends Application implements CrashHandler.CrashListener, Const {
-	private static File ERROR_FILE = new File(Environment.getExternalStorageDirectory(), "VEditCrash.txt");
-	private static Context cx;
+	private static File ERROR_FILE = new File(Environment.getExternalStorageDirectory(), "MalaxyCrash.txt");
 
 	@Override
 	protected void attachBaseContext(Context base) {
 		super.attachBaseContext(base);
+		InitializeConst();
 		G.Initialize(base);
 		CrashHandler.install(this);
-		//Logs.setLogFile(new File(Environment.getExternalStorageDirectory(), "VEditLog.txt"));
 	}
 
-	public static Context getContext() {
-		return cx;
+	private void InitializeConst() {
+		Const.LEXER_NAMES[0] = getString(R.string.lexer_name_auto);
+		Const.LEXER_NAMES[Const.LEXER_NAMES.length - 1] = getString(R.string.lexer_name_none);
+		Const.SYSTEM_FONTS[0] = getString(R.string.font_system_default);
+		Const.SYSTEM_FONTS[1] = getString(R.string.font_system_monospace);
+		Const.SYSTEM_FONTS[2] = getString(R.string.font_system_bold);
 	}
 
 	@Override
@@ -34,7 +37,7 @@ public class MainApplication extends Application implements CrashHandler.CrashLi
 			out.write(es.getBytes());
 			out.close();
 		} catch (Throwable th) {
-			Log.e(T, "Error While Saving Error:" + Log.getStackTraceString(th));
+			Log.e(T, "Failed to save crash log", th);
 		}
 		UI.onUI(new Runnable() {
 			@Override

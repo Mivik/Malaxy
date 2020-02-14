@@ -1,10 +1,8 @@
 package com.mivik.malaxy;
 
 
-import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -16,11 +14,13 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.util.ObjectsCompat;
 import androidx.core.view.ViewCompat;
 import com.mivik.malax.WrappedEditable;
 import com.mivik.malaxy.ui.FindReplaceDialog;
 import com.mivik.malaxy.ui.MultiContentManager;
 import com.mivik.malaxy.ui.UI;
+import com.mivik.malaxy.util.IntReference;
 import com.mivik.medit.MEdit;
 import com.mivik.medit.theme.MEditThemeDark;
 import com.mivik.medit.theme.MEditThemeLight;
@@ -28,8 +28,14 @@ import com.mivik.medit.theme.MEditThemeLight;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
 
-public class EditActivity extends BaseActivity implements WrappedEditable.EditActionListener, MultiContentManager.EditDataClickListener, Const {
+public class EditActivity extends BaseActivity implements MultiContentManager.EditDataChooseListener, WrappedEditable.EditActionListener, MultiContentManager.EditDataClickListener, Const {
 	public static final char[] SYMBOLS = {'\t', '{', '}', '(', ')', ';', ',', '.', '=', '\"', '<', '>', '&', '+', '-', '*', '/', '[', ']', '|', '!', '?', '\\', ':', '_'};
 	public static final String TAB = "->";
 
@@ -43,6 +49,8 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 	private LoadingDialog Loading;
 	private LinearLayoutCompat SymbolLayout;
 	private FindReplaceDialog FRDialog;
+	private MenuItem MenuItemEncodingReload;
+	private ChooseFileListener _ChooseFileListener;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +68,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		ContentManager = new MultiContentManager(this);
 		ContentManager.setTheme(MEditThemeDark.getInstance());
 		ContentManager.setEditDataClickListener(this);
+		ContentManager.setEditDataChooseListener(this);
 		Content = ContentManager.getContent();
 		Content.addEditActionListener(this);
 		onSettingsChanged();
@@ -76,6 +85,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		FRDialog = new FindReplaceDialog(Content);
 		Content.setEventHandler(new ZoomHelper());
 		Content.addEditActionListener(new CodeIndentListener());
+//		startActivity(new Intent(this, MalaxyActivity.class));
 	}
 
 	private void initSymbolLayout() {
@@ -91,7 +101,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		for (int i = 0; i < SYMBOLS.length; i++) {
 			tv = new TextView(this);
 			tv.setTextColor(w);
-			tv.setText(SYMBOLS[i] == '\t' ? TAB : SYMBOLS[i] + "");
+			tv.setText(SYMBOLS[i] == '\t' ? TAB : Character.toString(SYMBOLS[i]));
 			tv.setTextSize(20);
 			tv.setTypeface(Typeface.defaultFromStyle(Typeface.BOLD));
 			tv.setGravity(Gravity.CENTER);
@@ -121,13 +131,22 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		super.onDestroy();
 	}
 
-	private static final String[] _STORAGE_PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
-	private static final String[] _STORAGE_DESC = {"我们需要存储权限", "我们需要读取权限"};
-
 	private final boolean requestStoragePermissions() {
-		if (isAllPermissionsGranted(_STORAGE_PERMISSIONS)) return false;
-		getPermissions(_STORAGE_PERMISSIONS, _STORAGE_DESC, false);
+		final String[] permissions = getResources().getStringArray(R.array.app_permissions);
+		if (isAllPermissionsGranted(permissions)) return false;
+		getPermissions(permissions, getResources().getStringArray(R.array.app_permission_explanations), false);
 		return true;
+	}
+
+	@Override
+	public void onEditDataChose(final MultiContentManager.EditData data) {
+		UI.onUI(new Runnable() {
+			@Override
+			public void run() {
+				if (MenuItemEncodingReload != null)
+					MenuItemEncodingReload.setEnabled(data.getFile() != null);
+			}
+		});
 	}
 
 	@Override
@@ -145,10 +164,10 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 	}
 
 	@Override
-	public void onEditDataClick(final MultiContentManager.EditData data) {
+	public void onEditDataClicked(final MultiContentManager.EditData data) {
 		if (data.index == ContentManager.getIndex()) {
 			if (!data.saved) {
-				new AlertDialog.Builder(this).setTitle("提示").setMessage("你还没有保存，确定要关闭吗？").setPositiveButton("保存并关闭", new DialogInterface.OnClickListener() {
+				new AlertDialog.Builder(this).setTitle(R.string.dialog_note).setMessage(R.string.dialog_sure_to_close_unsaved_file).setPositiveButton(R.string.dialog_save_and_close_file, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						SaveTab(data, new Runnable() {
@@ -158,7 +177,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 							}
 						});
 					}
-				}).setNeutralButton("关闭", new DialogInterface.OnClickListener() {
+				}).setNeutralButton(R.string.dialog_close_file, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						ContentManager.deleteTab(data.index);
@@ -172,11 +191,16 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 
 	private void SaveTab(final MultiContentManager.EditData data, final Runnable action) {
 		if (requestStoragePermissions()) return;
+		if (data.saved) {
+			if (action != null) action.run();
+			return;
+		}
 		if (data.getFile() == null) {
 			setChooseFileListener(new ChooseFileListener() {
 				@Override
 				public void onChoose(File f) {
 					data.setFile(f);
+					if (MenuItemEncodingReload != null) MenuItemEncodingReload.setEnabled(true);
 					SaveTab(data, action);
 					ContentManager.onEditDataUpdated(data.index);
 				}
@@ -186,7 +210,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		}
 		try {
 			FileOutputStream out = new FileOutputStream(data.getFile());
-			out.write(Content.getText().getBytes());
+			out.write(Content.getText().getBytes(data.charset));
 			out.close();
 			data.saved = true;
 			ContentManager.onEditDataUpdated(data.index);
@@ -198,20 +222,22 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		View v = new View(this);
-		v.setBackgroundColor(Color.RED);
-		SubMenu sm = menu.addSubMenu(0, 0, 0, "文件").setIcon(UI.tintDrawable(this, R.mipmap.icon_directory, UI.AccentColor));
+		SubMenu sm = menu.addSubMenu(0, 0, 0, R.string.menu_file).setIcon(UI.tintDrawable(this, R.mipmap.icon_directory, UI.AccentColor));
 		sm.getItem().setShowAsActionFlags(2);
-		sm.add(0, 1, 0, "新建");
-		sm.add(0, 2, 0, "打开");
-		sm.add(0, 3, 0, "保存");
-		sm.add(0, 4, 0, "另存为");
-		sm = menu.addSubMenu(0, 0, 0, "编辑").setIcon(UI.tintDrawable(this, R.mipmap.icon_edit, UI.AccentColor));
+		sm.add(0, 1, 0, R.string.menu_file_new);
+		sm.add(0, 2, 0, R.string.menu_file_open);
+		sm.add(0, 3, 0, R.string.menu_file_save);
+		sm.add(0, 4, 0, R.string.menu_file_save_as);
+		SubMenu encoding = sm.addSubMenu(0, 0, 0, R.string.menu_file_encoding);
+		MenuItemEncodingReload = encoding.add(0, 9, 0, R.string.menu_file_encoding_reload_with_new_encoding);
+		MenuItemEncodingReload.setEnabled(false);
+		encoding.add(0, 10, 0, R.string.menu_file_encoding_choose_save_encoding);
+		sm = menu.addSubMenu(0, 0, 0, R.string.menu_edit).setIcon(UI.tintDrawable(this, R.mipmap.icon_edit, UI.AccentColor));
 		sm.getItem().setShowAsActionFlags(2);
-		sm.add(0, 6, 0, "撤销");
-		sm.add(0, 7, 0, "重做");
-		sm.add(0, 8, 0, "查找/替换");
-		menu.add(0, 5, 0, R.string.title_settings).setIcon(UI.tintDrawable(this, R.mipmap.icon_settings, UI.AccentColor)).setShowAsActionFlags(2);
+		sm.add(0, 6, 0, R.string.menu_edit_undo);
+		sm.add(0, 7, 0, R.string.menu_edit_redo);
+		sm.add(0, 8, 0, R.string.menu_edit_find_or_replace);
+		menu.add(0, 5, 0, R.string.menu_settings).setIcon(UI.tintDrawable(this, R.mipmap.icon_settings, UI.AccentColor)).setShowAsActionFlags(2);
 		return true;
 	}
 
@@ -245,32 +271,13 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 				setChooseFileListener(new ChooseFileListener() {
 					@Override
 					public void onChoose(final File f) {
-						showLoading("加载文件中...");
-						new Thread() {
-							@Override
-							public void run() {
-								try {
-									final char[] s = new String(IO.Read(new FileInputStream(f))).toCharArray();
-									UI.onUI(new Runnable() {
-										@Override
-										public void run() {
-											ContentManager.addTab(s, f);
-											// 好很好！三重嵌套nmsl
-											new Thread() {
-												@Override
-												public void run() {
-													Content.parseAll();
-													dismissLoading();
-												}
-											}.start();
-										}
-									});
-								} catch (Throwable t) {
-									dismissLoading();
-									UI.postShowError(EditActivity.this, t);
-								}
-							}
-						}.start();
+						int ind = ContentManager.findFile(f);
+						if (ind != -1) {
+							ContentManager.setIndex(ind);
+							return;
+						}
+						ContentManager.addTab(null, null, f);
+						loadFile(f, null);
 					}
 				});
 				ChooseFileActivity.chooseFile(this, REQUEST_CODE_CHOOSE_FILE);
@@ -311,13 +318,89 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 				FRDialog.show();
 				break;
 			}
+			case 9: {
+				chooseEncoding(ContentManager.getCurrentEditData().charset, new ChooseCharsetListener() {
+					@Override
+					public void onChoose(Charset charset) {
+						if (ObjectsCompat.equals(ContentManager.getCurrentEditData().charset, charset)) return;
+						loadFile(ContentManager.getCurrentEditData().getFile(), charset);
+					}
+				});
+				break;
+			}
+			case 10: {
+				chooseEncoding(ContentManager.getCurrentEditData().charset, new ChooseCharsetListener() {
+					@Override
+					public void onChoose(Charset charset) {
+						MultiContentManager.EditData data = ContentManager.getCurrentEditData();
+						if (ObjectsCompat.equals(charset, data.charset)) return;
+						data.charset = charset;
+						data.saved = false;
+						ContentManager.onEditDataUpdated(data.index);
+					}
+				});
+			}
 			default:
 				return super.onOptionsItemSelected(item);
 		}
 		return true;
 	}
 
-	private ChooseFileListener _ChooseFileListener;
+	private void loadFile(final File f, final Charset def) {
+		showLoading(getString(R.string.dialog_loading_file));
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					byte[] data = IO.Read(new FileInputStream(f));
+					final Charset charset = def == null ? IO.guessCharset(data) : def;
+					final CharBuffer buf = charset.decode(ByteBuffer.wrap(data));
+					UI.onUI(new Runnable() {
+						@Override
+						public void run() {
+							MultiContentManager.EditData data = ContentManager.getCurrentEditData();
+							data.charset = charset;
+							data.setText(buf.array(), 0, buf.length());
+							// 好很好！三重嵌套
+							new Thread() {
+								@Override
+								public void run() {
+									Content.parseAll();
+									dismissLoading();
+								}
+							}.start();
+						}
+					});
+				} catch (Throwable t) {
+					dismissLoading();
+					UI.postShowError(EditActivity.this, t);
+				}
+			}
+		}.start();
+	}
+
+	private void chooseEncoding(Charset cur, final ChooseCharsetListener listener) {
+		final Map<String, Charset> all = Charset.availableCharsets();
+		Set<String> keySet = all.keySet();
+		final String[] sorted = new String[keySet.size() + 1];
+		int i = 0;
+		for (String one : keySet) sorted[++i] = one;
+		Arrays.sort(sorted, 1, sorted.length);
+		sorted[0] = getString(R.string.dialog_encoding_auto);
+		int ind = Arrays.binarySearch(sorted, cur.name());
+		final IntReference chosen = new IntReference(ind);
+		new AlertDialog.Builder(this).setSingleChoiceItems(sorted, ind, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				chosen.val = which;
+			}
+		}).setPositiveButton(R.string.dialog_confirm, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				listener.onChoose(chosen.val == 0 ? null : all.get(sorted[chosen.val]));
+			}
+		}).setNegativeButton(R.string.dialog_cancel, null).setCancelable(true).show();
+	}
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -340,7 +423,7 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		Content.setTypeface(G._FONT);
 		Content.setTextSize(TypedValue.COMPLEX_UNIT_SP, G._TEXT_SIZE);
 		Content.setShowLineNumber(G._SHOW_LINE_NUMBER);
-		Content.setSplitLineEnabled(G._SPLIT_LINE);
+		Content.setWordWrappingEnabled(G._SPLIT_LINE);
 		ContentManager.setTheme(G._NIGHT_THEME ? MEditThemeDark.getInstance() : MEditThemeLight.getInstance());
 		ContentManager.onEditDataUpdated(ContentManager.getIndex());
 	}
@@ -351,18 +434,19 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 
 	@Override
 	public void onBackPressed() {
-		if (!ContentManager.getCurrentEditData().saved) {
-			new AlertDialog.Builder(this).setTitle("提示").setMessage("你还没有保存，确定要退出吗？").setPositiveButton("保存并退出", new DialogInterface.OnClickListener() {
+		boolean unsaved = false;
+		for (int i = 0; i < ContentManager.getSize(); i++)
+			if (!ContentManager.getEditData(i).saved) {
+				unsaved = true;
+				break;
+			}
+		if (unsaved) {
+			new AlertDialog.Builder(this).setTitle(R.string.dialog_note).setMessage(R.string.dialog_sure_to_exit_with_file_unsaved).setPositiveButton(R.string.dialog_save_and_close_file, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					SaveTab(ContentManager.getCurrentEditData(), new Runnable() {
-						@Override
-						public void run() {
-							finish();
-						}
-					});
+					new SaveAllRunnable().run();
 				}
-			}).setNeutralButton("退出", new DialogInterface.OnClickListener() {
+			}).setNeutralButton(R.string.dialog_exit, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					finish();
@@ -371,7 +455,29 @@ public class EditActivity extends BaseActivity implements WrappedEditable.EditAc
 		} else finish();
 	}
 
+	private interface ChooseCharsetListener {
+		void onChoose(Charset charset);
+	}
+
 	private interface ChooseFileListener {
 		void onChoose(File f);
+	}
+
+	private class SaveAllRunnable implements Runnable {
+		private int ind;
+
+		public SaveAllRunnable() {
+			this.ind = 0;
+		}
+
+		public SaveAllRunnable(int ind) {
+			this.ind = ind;
+		}
+
+		@Override
+		public void run() {
+			Runnable next = ind == ContentManager.getSize() - 1 ? null : new SaveAllRunnable(ind + 1);
+			SaveTab(ContentManager.getCurrentEditData(), next);
+		}
 	}
 }

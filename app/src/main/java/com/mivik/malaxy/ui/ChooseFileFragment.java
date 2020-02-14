@@ -13,6 +13,7 @@ import android.widget.*;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.mivik.malaxy.R;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -64,6 +65,8 @@ public class ChooseFileFragment extends MFragment implements AdapterView.OnItemC
 	private FileFilter filter;
 	private ChooseFileListener listener;
 	private DirectoryChangeListener dirChangeListener;
+	private TextView path;
+	private FileAdapter adapter;
 
 	public void setDirectoryChangeListener(DirectoryChangeListener listener) {
 		dirChangeListener = listener;
@@ -123,7 +126,7 @@ public class ChooseFileFragment extends MFragment implements AdapterView.OnItemC
 		buttonLayout.setOrientation(LinearLayoutCompat.HORIZONTAL);
 		layout.addView(buttonLayout, -1, -2);
 		goBack = new AppCompatButton(cx);
-		goBack.setText("上一层");
+		goBack.setText(R.string.choose_file_goto_parent_directory);
 		goBack.setBackgroundDrawable(null);
 		goBack.setOnClickListener(new OnClickListener() {
 			@Override
@@ -134,7 +137,7 @@ public class ChooseFileFragment extends MFragment implements AdapterView.OnItemC
 		buttonLayout.addView(goBack, getDivideParams(false));
 		if (chooseDir) {
 			ok = new AppCompatButton(cx);
-			ok.setText("选择文件夹");
+			ok.setText(R.string.choose_file_choose_directory);
 			ok.setBackgroundDrawable(null);
 			ok.setOnClickListener(new OnClickListener() {
 				@Override
@@ -217,11 +220,11 @@ public class ChooseFileFragment extends MFragment implements AdapterView.OnItemC
 				for (int i = 0; i < tmpp.length; i++) fs[i] = new File(dir, tmpp[i]);
 				for (int i = 0; i < tmp.length; i++) fs[dq + i] = new File(dir, tmp[i]);
 				final File[] ffs = fs;
+				ds.clear();
+				for (File one : ffs) ds.add(one);
 				list.post(new Runnable() {
 					@Override
 					public void run() {
-						ds.clear();
-						for (File one : ffs) ds.add(one);
 						path.setText(dir.getPath());
 						adapter.notifyDataSetChanged();
 						Refresh.setRefreshing(false);
@@ -230,8 +233,6 @@ public class ChooseFileFragment extends MFragment implements AdapterView.OnItemC
 			}
 		}.start();
 	}
-
-	FileAdapter adapter;
 
 	@Override
 	public View getView() {
@@ -252,9 +253,7 @@ public class ChooseFileFragment extends MFragment implements AdapterView.OnItemC
 		}
 	}
 
-	TextView path;
-
-	static LinearLayoutCompat.LayoutParams getDivideParams(boolean vertical) {
+	private static LinearLayoutCompat.LayoutParams getDivideParams(boolean vertical) {
 		LinearLayoutCompat.LayoutParams p = new LinearLayoutCompat.LayoutParams(-1, -1);
 		if (vertical) p.height = 0;
 		else p.width = 0;
@@ -291,11 +290,6 @@ public class ChooseFileFragment extends MFragment implements AdapterView.OnItemC
 			layout.addView(t);
 			return layout;
 		}
-	}
-
-	@Override
-	public Object getTag() {
-		return "VFileChooser";
 	}
 
 	public interface ChooseFileListener {

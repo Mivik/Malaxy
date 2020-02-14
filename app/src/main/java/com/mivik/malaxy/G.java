@@ -6,6 +6,7 @@ import android.content.res.AssetManager;
 import android.graphics.Typeface;
 import android.os.Environment;
 import android.util.Log;
+import androidx.core.util.ObjectsCompat;
 import com.mivik.mlexer.MLexer;
 
 import java.io.File;
@@ -27,7 +28,7 @@ public final class G implements Const {
 		S = cx.getSharedPreferences("editor_config", Context.MODE_PRIVATE);
 		String str = S.getString("lexer_name", LEXER_NAMES[0]);
 		for (int i = 0; i < LEXER_NAMES.length; i++)
-			if (LEXER_NAMES[i].equals(str)) {
+			if (ObjectsCompat.equals(LEXER_NAMES[i], str)) {
 				_LEXER_ID = i;
 				break;
 			}

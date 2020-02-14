@@ -7,6 +7,7 @@ import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
@@ -32,6 +33,7 @@ import com.mivik.malaxy.ui.UI;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 
 public class ChooseFileActivity extends BaseActivity implements ChooseFileFragment.ChooseFileListener, ChooseFileFragment.DirectoryChangeListener {
@@ -88,53 +90,54 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 				}
 			});
 			NameInput = new AppCompatEditText(this);
-			NameInput.setHint("文件名");
-			InputDialog = new AlertDialog.Builder(this).setTitle("文件名字").setView(NameInput).setPositiveButton("确定", new DialogInterface.OnClickListener() {
+			NameInput.setHint(getString(R.string.choose_file_filename));
+			InputDialog = new AlertDialog.Builder(this).setTitle(R.string.choose_file_filename).setView(NameInput).setPositiveButton("确定", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					String name = NameInput.getText().toString();
 					if (name.length() == 0) {
-						NameInput.setError("文件名不能为空");
+						NameInput.setError(getString(R.string.dialog_text_cannot_be_empty));
 						UI.preventDismiss(InputDialog);
 						return;
 					}
-					File ret = null;
+					File ret;
 					try {
 						ret = new File(ChosenFile, name);
 					} catch (Throwable t) {
-						NameInput.setError("含有非法字符");
+						NameInput.setError(getString(R.string.dialog_text_contains_illegal_characters));
 						UI.preventDismiss(InputDialog);
 						return;
 					}
 					if (ret.exists()) {
-						NameInput.setError("文件已存在");
+						NameInput.setError(getString(R.string.choose_file_file_exists));
 						UI.preventDismiss(InputDialog);
 						return;
 					}
 					try {
 						ret.createNewFile();
-					} catch (Throwable t) {
-						NameInput.setError("创建文件失败");
+					} catch (IOException t) {
+						Log.e(Const.T, "Failed to create file", t);
+						NameInput.setError(getString(R.string.choose_file_failed_to_create_file));
 						UI.preventDismiss(InputDialog);
 						return;
 					}
 					UI.forceDismiss(InputDialog);
 					returnFile(ret);
 				}
-			}).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+			}).setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					UI.forceDismiss(InputDialog);
 				}
 			}).setCancelable(true).create();
-			OverrideDialog = new AlertDialog.Builder(this).setTitle("文件已存在").setMessage("你确定要覆盖此文件吗？").setPositiveButton("确定", new DialogInterface.OnClickListener() {
+			OverrideDialog = new AlertDialog.Builder(this).setTitle(R.string.choose_file_file_exists).setMessage(getString(R.string.choose_file_sure_to_replace_file)).setPositiveButton(R.string.dialog_confirm, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					ChosenFile.delete();
 					UI.forceDismiss(OverrideDialog);
 					returnFile(ChosenFile);
 				}
-			}).setNegativeButton("取消", null).setCancelable(true).create();
+			}).setNegativeButton(R.string.dialog_cancel, null).setCancelable(true).create();
 		} else
 			F = new ChooseFileFragment(this, G._HOME_DIR, this, _DIRECTORY);
 		F.setShowPath(false);
@@ -145,21 +148,21 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 
 		DrawerContent = new LinearLayoutCompat(this);
 		DrawerContent.setOrientation(LinearLayoutCompat.VERTICAL);
-		DrawerContent.addView(newItemView("设为首页", R.mipmap.icon_home, new View.OnClickListener() {
+		DrawerContent.addView(newItemView(getString(R.string.choose_file_set_as_homepage), R.mipmap.icon_home, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				G.setHomeDir(F.getCurrentDirectory());
 				Drawer.closeDrawers();
 			}
 		}));
-		DrawerContent.addView(newItemView("回到首页", R.mipmap.icon_return, new View.OnClickListener() {
+		DrawerContent.addView(newItemView(getString(R.string.choose_file_goto_homepage), R.mipmap.icon_return, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				F.setCurrentDirectory(G._HOME_DIR);
 				Drawer.closeDrawers();
 			}
 		}));
-		DrawerContent.addView(newItemView("添加书签", R.mipmap.icon_bookmark, new View.OnClickListener() {
+		DrawerContent.addView(newItemView(getString(R.string.choose_file_add_bookmark), R.mipmap.icon_bookmark, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				if (!G._BOOKMARKS.contains(F.getCurrentDirectory())) G._BOOKMARKS.add(F.getCurrentDirectory());
@@ -237,7 +240,7 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 			layout.setOnLongClickListener(new View.OnLongClickListener() {
 				@Override
 				public boolean onLongClick(View v) {
-					new AlertDialog.Builder(ChooseFileActivity.this).setTitle("提示").setMessage("你确定要删除此书签吗？").setPositiveButton("删除", new DialogInterface.OnClickListener() {
+					new AlertDialog.Builder(ChooseFileActivity.this).setTitle(R.string.dialog_note).setMessage(R.string.choose_file_sure_to_remove_bookmark).setPositiveButton(R.string.dialog_confirm, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							if (G._BOOKMARKS.remove(f)) {
@@ -245,7 +248,7 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 								refreshBookmarks();
 							}
 						}
-					}).setNeutralButton("取消", null).setCancelable(true).show();
+					}).setNeutralButton(R.string.dialog_cancel, null).setCancelable(true).show();
 					return true;
 				}
 			});
@@ -332,7 +335,7 @@ public class ChooseFileActivity extends BaseActivity implements ChooseFileFragme
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		final int flag = MenuItem.SHOW_AS_ACTION_ALWAYS;
-		menu.add(0, 0, 0, "关闭").setIcon(R.mipmap.icon_close).setShowAsActionFlags(flag);
+		menu.add(0, 0, 0, R.string.menu_close).setIcon(R.mipmap.icon_close).setShowAsActionFlags(flag);
 		return true;
 	}
 

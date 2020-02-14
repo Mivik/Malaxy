@@ -36,15 +36,15 @@ public abstract class BaseActivity extends AppCompatActivity {
 			REQUESTING_PERMISSION = false;
 			for (int i = 0; i < grantResults.length; i++)
 				if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-					AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle("权限需求").setMessage(PERMISSION_DESCRIPTIONS[i]).setCancelable(true).setPositiveButton("确定", new DialogInterface.OnClickListener() {
+					AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle(R.string.dialog_permission_request).setMessage(PERMISSION_DESCRIPTIONS[i]).setCancelable(true).setPositiveButton(R.string.dialog_confirm, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							getPermissions(permissions, PERMISSION_DESCRIPTIONS, FORCE_PERMISSION);
 						}
 					});
 					builder.setCancelable(!FORCE_PERMISSION);
-					if (!FORCE_PERMISSION)
-						builder.setNegativeButton("取消", null);
+					if (!FORCE_PERMISSION) builder.setNegativeButton(R.string.dialog_cancel, null);
+					builder.show();
 					break;
 				}
 		}

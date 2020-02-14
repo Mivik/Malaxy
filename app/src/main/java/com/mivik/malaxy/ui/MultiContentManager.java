@@ -10,14 +10,14 @@ import androidx.appcompat.widget.LinearLayoutCompat;
 import com.mivik.malax.Malax;
 import com.mivik.malaxy.Const;
 import com.mivik.malaxy.G;
-import com.mivik.malaxy.IO;
 import com.mivik.medit.MEdit;
 import com.mivik.medit.theme.MEditTheme;
 import com.mivik.medit.theme.MEditThemeLight;
 import com.mivik.mlexer.*;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 
 import static com.mivik.malax.BaseMalax.Cursor;
 
@@ -35,6 +35,7 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 	private AppCompatButton CurrentButton;
 	private MEdit Content;
 	private EditDataClickListener _ClickListener;
+	private EditDataChooseListener _ChooseListener;
 
 	public MultiContentManager(Context cx) {
 		super(cx);
@@ -76,8 +77,7 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 	}
 
 	private void onTabSizeUpdated() {
-		if (size == 0)
-			addTab();
+		if (size == 0) addTab();
 	}
 
 	public void setEditDataClickListener(EditDataClickListener listener) {
@@ -86,6 +86,14 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 
 	public EditDataClickListener getEditDataClickListener() {
 		return _ClickListener;
+	}
+
+	public void setEditDataChooseListener(EditDataChooseListener listener) {
+		_ChooseListener = listener;
+	}
+
+	public EditDataChooseListener getEditDataChooseListener() {
+		return _ChooseListener;
 	}
 
 	public MEdit getContent() {
@@ -112,6 +120,11 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 			}
 	}
 
+	public int findFile(File f) {
+		for (int i = 0; i < size; i++) if (f.equals(data[i].file)) return i;
+		return -1;
+	}
+
 	private void ensureCapture() {
 		int olen = data.length;
 		if (size > olen) {
@@ -123,17 +136,8 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 		}
 	}
 
-	public void addTab(File f) {
-		for (int i = 0; i < size; i++)
-			if (f.equals(data[i].file)) {
-				setIndex(i);
-				return;
-			}
-		try {
-			addTab(new String(IO.Read(new FileInputStream(f))).toCharArray(), f);
-		} catch (Throwable t) {
-			t.printStackTrace();
-		}
+	public void addTab() {
+		addTab(size, null, Charset.defaultCharset(), null);
 	}
 
 	public void deleteTab(int pos) {
@@ -158,23 +162,11 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 		onTabSizeUpdated();
 	}
 
-	public void addTab() {
-		addTab(size, null);
+	public void addTab(CharBuffer cs, Charset charset, File file) {
+		addTab(size, cs, charset, file);
 	}
 
-	public void addTab(char[] cs) {
-		addTab(size, cs);
-	}
-
-	public void addTab(char[] cs, File file) {
-		addTab(size, cs, file);
-	}
-
-	public void addTab(int pos, char[] cs) {
-		addTab(pos, cs, null);
-	}
-
-	public void addTab(int pos, char[] cs, File file) {
+	public void addTab(int pos, CharBuffer cs, Charset charset, File file) {
 		if (pos < 0) pos = 0;
 		if (pos > size) pos = size;
 		size++;
@@ -184,7 +176,8 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 		data[pos] = new EditData(pos);
 		data[pos].setFile(file);
 		if (file != null) data[pos].saved = true;
-		data[pos].setText(cs);
+		if (cs != null) data[pos].setText(cs.array(), 0, cs.length());
+		data[pos].charset = charset;
 		AppCompatButton button = new AppCompatButton(getContext());
 		button.setTextColor(Content.getTheme().getLineNumberColor());
 		button.setBackgroundColor(Content.getTheme().getBackgroundColor());
@@ -218,7 +211,7 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 	public void onClick(View v) {
 		EditData data = (EditData) v.getTag();
 		if (_ClickListener != null)
-			_ClickListener.onEditDataClick(data);
+			_ClickListener.onEditDataClicked(data);
 		if (v != CurrentButton) setIndex(data.index);
 	}
 
@@ -246,6 +239,7 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 		final EditData cur = getCurrentEditData();
 		Content.setMalax(cur.malax);
 		cur.applyTo(Content);
+		if (_ChooseListener != null) _ChooseListener.onEditDataChose(data[pos]);
 	}
 
 	public void selectButton(AppCompatButton button, boolean selected) {
@@ -264,7 +258,11 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 	}
 
 	public interface EditDataClickListener {
-		void onEditDataClick(EditData data);
+		void onEditDataClicked(EditData data);
+	}
+
+	public interface EditDataChooseListener {
+		void onEditDataChose(EditData data);
 	}
 
 	public static class EditData {
@@ -273,6 +271,7 @@ public class MultiContentManager extends LinearLayoutCompat implements View.OnCl
 		public int index;
 		public Malax malax;
 		public boolean saved;
+		public Charset charset;
 		private File file;
 
 		public EditData(int ind) {

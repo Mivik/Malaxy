@@ -17,10 +17,9 @@ import java.util.Arrays;
 import static com.mivik.malax.BaseMalax.Cursor;
 
 public class Malaxy extends MEdit implements WrappedEditable.EditActionListener {
+	public static final String T = "Malaxy";
+
 	private Cursor ReadCursor;
-	private InputChannel input;
-	private final OutputChannel output = new MalaxyOutputChannel();
-	private final byte[] InputLock = new byte[0];
 
 	public Malaxy(Context cx) {
 		this(cx, null, 0);
@@ -33,7 +32,7 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 	public Malaxy(Context cx, AttributeSet attrs, int defStyle) {
 		super(cx, attrs, defStyle);
 		S.setRecordAction(false);
-		setSplitLineEnabled(true);
+		setWordWrappingEnabled(true);
 		setShowLineNumber(false);
 		setTheme(MalaxyTheme.getInstance());
 		setLexer(null);
@@ -48,12 +47,6 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 
 	private void scrollToBottom() {
 		scrollTo(Math.max(ContentHeight - getHeight(), 0), getScrollY());
-	}
-
-	public void setInputChannel(InputChannel input) {
-		synchronized (InputLock) {
-			this.input = input;
-		}
 	}
 
 	@Override
@@ -94,14 +87,11 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 		if (editAction instanceof WrappedEditable.InsertCharAction) {
 			WrappedEditable.InsertCharAction action = (WrappedEditable.InsertCharAction) editAction;
 			if (action.ch == '\n') {
-				if (input != null) {
-					synchronized (InputLock) {
-						if (input != null) {
-							char[] data = S.substring(new RangeSelection<>(ReadCursor, S.getEndCursor())).toCharArray();
-							input.onRead(data, 0, data.length);
-						}
-					}
-				}
+				/*try {
+					outputPipe.out.write(S.substring(new RangeSelection<>(ReadCursor, S.getEndCursor())).getBytes());
+				} catch (IOException e) {
+					Log.e(T, "Failed to write input text to outputPipe", e);
+				}*/
 				ReadCursor = S.getEndCursor();
 			}
 		}
@@ -118,22 +108,15 @@ public class Malaxy extends MEdit implements WrappedEditable.EditActionListener 
 		return ret;
 	}
 
-	public OutputChannel getOutputChannel() {
-		return output;
-	}
-
-	private class MalaxyOutputChannel extends OutputChannel {
-		@Override
-		public void onWrite(final char[] cs, final int off, final int len) {
-			post(new Runnable() {
-				@Override
-				public void run() {
-					ReadCursor = S.getMalax().insert(ReadCursor, cs, off, len);
-					moveCursor(S.getEndCursor());
-					makeCursorVisible(ReadCursor);
-				}
-			});
-		}
+	public void writeChars(final char[] cs, final int off, final int len) {
+		post(new Runnable() {
+			@Override
+			public void run() {
+				ReadCursor = S.getMalax().insert(ReadCursor, cs, off, len);
+				moveCursor(S.getEndCursor());
+				makeCursorVisible(ReadCursor);
+			}
+		});
 	}
 
 	private static class MalaxyIndicator extends Indicator {

@@ -36,7 +36,7 @@ public class UI {
 				window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
 				window.setStatusBarColor(color);
 			} catch (Throwable t) {
-				Log.e(Const.T, "tintStatusBar -> " + activity, t);
+				Log.e(Const.T, "tintStatusBar of " + activity, t);
 			}
 		}
 	}
