@@ -15,7 +15,6 @@ public class MEditThemeLight extends MEditTheme {
 		setSelectionColor(0x552196F3);
 		setCursorLineColor(0xFFFF5722);
 		setIndicatorColor(0xFF2196F3);
-		setIndicatorGlassColor(0x442196F3);
 		setBackgroundColor(0xFFFFFFFF);
 		setLineNumberColor(0xFF000000);
 		setSlideBarColor(0xCC2196F3);

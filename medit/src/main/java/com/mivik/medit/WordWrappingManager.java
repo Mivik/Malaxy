@@ -14,7 +14,7 @@ public class WordWrappingManager implements BaseMalax.ContentChangeListener {
 	private int[] S = new int[16];
 	private boolean enabled = true;
 	private UpdateListener listener;
-	private float lstWidth = -1;
+	private float lastWidth = -1;
 
 	public WordWrappingManager(MEdit edit) {
 		this.edit = edit;
@@ -31,7 +31,7 @@ public class WordWrappingManager implements BaseMalax.ContentChangeListener {
 	public void setEnabled(boolean flag) {
 		if (this.enabled == flag) return;
 		if (this.enabled = flag) onUpdate();
-		else lstWidth = -1;
+		else lastWidth = -1;
 	}
 
 	public boolean isEnabled() {
@@ -139,8 +139,8 @@ public class WordWrappingManager implements BaseMalax.ContentChangeListener {
 			if (listener != null) listener.onUpdate();
 			return;
 		}
-		if (Math.abs(newWidth - lstWidth) < 0.1) return;
-		lstWidth = newWidth;
+		if (Math.abs(newWidth - lastWidth) < 0.1) return;
+		lastWidth = newWidth;
 		final LineManager line = edit.S.getLineManager();
 		final int tot = line.size();
 		if (tot == 0) return;

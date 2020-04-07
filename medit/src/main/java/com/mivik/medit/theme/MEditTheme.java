@@ -4,7 +4,7 @@ import com.mivik.mlexer.MLexer;
 
 public abstract class MEditTheme {
 	protected int[] C = new int[MLexer.TOTAL_COUNT];
-	protected int _SplitLine, _Selection, _CursorLine, _Indicator, _IndicatorGlass, _BackgroundColor, _LineNumberColor, _SlideBarColor;
+	protected int mSplitLineColor, mSelectionColor, mCursorLineColor, mIndicatorColor, mBackgroundColor, mLineNumberColor, mSlideBarColor;
 
 	protected void setTypeColor(short type, int color) {
 		C[type] = color;
@@ -15,66 +15,58 @@ public abstract class MEditTheme {
 	}
 
 	protected void setSplitLineColor(int color) {
-		_SplitLine = color;
+		mSplitLineColor = color;
 	}
 
 	public int getSplitLineColor() {
-		return _SplitLine;
+		return mSplitLineColor;
 	}
 
 	protected void setSelectionColor(int color) {
-		_Selection = color;
+		mSelectionColor = color;
 	}
 
 	public int getSelectionColor() {
-		return _Selection;
+		return mSelectionColor;
 	}
 
 	protected void setCursorLineColor(int color) {
-		_CursorLine = color;
+		mCursorLineColor = color;
 	}
 
 	public int getCursorLineColor() {
-		return _CursorLine;
+		return mCursorLineColor;
 	}
 
 	protected void setIndicatorColor(int color) {
-		_Indicator = color;
+		mIndicatorColor = color;
 	}
 
 	public int getIndicatorColor() {
-		return _Indicator;
-	}
-
-	protected void setIndicatorGlassColor(int color) {
-		_IndicatorGlass = color;
-	}
-
-	public int getIndicatorGlassColor() {
-		return _IndicatorGlass;
+		return mIndicatorColor;
 	}
 
 	protected void setBackgroundColor(int color) {
-		_BackgroundColor = color;
+		mBackgroundColor = color;
 	}
 
 	public int getBackgroundColor() {
-		return _BackgroundColor;
+		return mBackgroundColor;
 	}
 
 	protected void setLineNumberColor(int color) {
-		_LineNumberColor = color;
+		mLineNumberColor = color;
 	}
 
 	public int getLineNumberColor() {
-		return _LineNumberColor;
+		return mLineNumberColor;
 	}
 
 	protected void setSlideBarColor(int color) {
-		_SlideBarColor = color;
+		mSlideBarColor = color;
 	}
 
 	public int getSlideBarColor() {
-		return _SlideBarColor;
+		return mSlideBarColor;
 	}
 }

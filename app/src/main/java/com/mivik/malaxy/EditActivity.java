@@ -18,9 +18,10 @@ import androidx.core.util.ObjectsCompat;
 import androidx.core.view.ViewCompat;
 import com.mivik.malax.WrappedEditable;
 import com.mivik.malaxy.ui.FindReplaceDialog;
+import com.mivik.malaxy.ui.LoadingDialog;
 import com.mivik.malaxy.ui.MultiContentManager;
 import com.mivik.malaxy.ui.UI;
-import com.mivik.malaxy.util.IntReference;
+import com.mivik.malaxy.util.MutableInteger;
 import com.mivik.medit.MEdit;
 import com.mivik.medit.theme.MEditThemeDark;
 import com.mivik.medit.theme.MEditThemeLight;
@@ -83,7 +84,6 @@ public class EditActivity extends BaseActivity implements MultiContentManager.Ed
 
 		Loading = new LoadingDialog(this);
 		FRDialog = new FindReplaceDialog(Content);
-		Content.setEventHandler(new ZoomHelper());
 		Content.addEditActionListener(new CodeIndentListener());
 //		startActivity(new Intent(this, MalaxyActivity.class));
 	}
@@ -388,7 +388,7 @@ public class EditActivity extends BaseActivity implements MultiContentManager.Ed
 		Arrays.sort(sorted, 1, sorted.length);
 		sorted[0] = getString(R.string.dialog_encoding_auto);
 		int ind = Arrays.binarySearch(sorted, cur.name());
-		final IntReference chosen = new IntReference(ind);
+		final MutableInteger chosen = new MutableInteger(ind);
 		new AlertDialog.Builder(this).setSingleChoiceItems(sorted, ind, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -404,7 +404,7 @@ public class EditActivity extends BaseActivity implements MultiContentManager.Ed
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-		if (resultCode == RESULT_OK) {
+		if (resultCode == RESULT_OK && data != null) {
 			switch (requestCode) {
 				case REQUEST_CODE_SETTING:
 					if (data.getBooleanExtra(SettingActivity.CONFIG_CHANGED, false)) onSettingsChanged();
@@ -424,6 +424,7 @@ public class EditActivity extends BaseActivity implements MultiContentManager.Ed
 		Content.setTextSize(TypedValue.COMPLEX_UNIT_SP, G._TEXT_SIZE);
 		Content.setShowLineNumber(G._SHOW_LINE_NUMBER);
 		Content.setWordWrappingEnabled(G._SPLIT_LINE);
+		Content.setEventHandler(G._TWO_FINGER_SCALING ? new ZoomHelper() : null);
 		ContentManager.setTheme(G._NIGHT_THEME ? MEditThemeDark.getInstance() : MEditThemeLight.getInstance());
 		ContentManager.onEditDataUpdated(ContentManager.getIndex());
 	}

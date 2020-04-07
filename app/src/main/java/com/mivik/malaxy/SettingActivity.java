@@ -1,5 +1,6 @@
 package com.mivik.malaxy;
 
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,7 +12,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatEditText;
 import com.mivik.malaxy.ui.SettingFragment;
 import com.mivik.malaxy.ui.UI;
-import com.mivik.malaxy.util.IntReference;
+import com.mivik.malaxy.util.MutableInteger;
 
 public class SettingActivity extends BaseActivity {
 	public static final int REQUEST_CODE_CHOOSE_FONT = 233;
@@ -68,6 +69,7 @@ public class SettingActivity extends BaseActivity {
 		Q.addSimpleItem(getString(R.string.settings_editor_font_size), getString(R.string.settings_editor_font_size_description)).setOnClickListener(new View.OnClickListener() {
 			private AlertDialog Dialog;
 
+			@SuppressLint("SetTextI18n")
 			@Override
 			public void onClick(View v) {
 				final AppCompatEditText edit = new AppCompatEditText(SettingActivity.this);
@@ -101,7 +103,7 @@ public class SettingActivity extends BaseActivity {
 			}
 		});
 		{
-			final IntReference ret = new IntReference(G._LEXER_ID);
+			final MutableInteger ret = new MutableInteger(G._LEXER_ID);
 			Q.addSimpleItem(getString(R.string.settings_editor_highlight), getString(R.string.settings_editor_highlight_description)).setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
@@ -118,6 +120,18 @@ public class SettingActivity extends BaseActivity {
 							onConfigChanged();
 						}
 					}).setNegativeButton(R.string.dialog_cancel, null).setCancelable(true).show();
+				}
+			});
+		}
+		{
+			final SettingFragment.CheckBoxItem item = Q.addCheckBoxItem(getString(R.string.settings_editor_two_finger_scaling), getString(R.string.settings_editor_two_finger_scaling_description));
+			item.setChecked(G._TWO_FINGER_SCALING);
+			item.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (item.isChecked() == G._TWO_FINGER_SCALING) return;
+					G.setTwoFingerScaling(item.isChecked());
+					onConfigChanged();
 				}
 			});
 		}

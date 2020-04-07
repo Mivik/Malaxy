@@ -1,4 +1,4 @@
-package com.mivik.malaxy;
+package com.mivik.malaxy.ui;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -8,8 +8,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.swiperefreshlayout.widget.CircularProgressDrawable;
-import com.mivik.malaxy.ui.FullScreenDialog;
-import com.mivik.malaxy.ui.UI;
+import com.mivik.malaxy.G;
 
 public class LoadingDialog extends FullScreenDialog {
 	public LoadingDialog(Context cx) {
@@ -19,28 +18,26 @@ public class LoadingDialog extends FullScreenDialog {
 		Initialize();
 	}
 
-	private LinearLayout Root;
-	private ProgressBar Content;
 	private TextView Message;
 
 	private void Initialize() {
-		Root = new LinearLayout(getContext());
-		Root.setGravity(Gravity.CENTER);
-		Root.setBackgroundDrawable(null);
-		Root.setOrientation(LinearLayout.VERTICAL);
-		Content = new ProgressBar(getContext());
+		LinearLayout root = new LinearLayout(getContext());
+		root.setGravity(Gravity.CENTER);
+		root.setBackgroundDrawable(null);
+		root.setOrientation(LinearLayout.VERTICAL);
+		ProgressBar content = new ProgressBar(getContext());
 		CircularProgressDrawable drawable = new CircularProgressDrawable(getContext());
 		drawable.setColorSchemeColors(G.REFRESH_COLORS);
 		drawable.setStrokeWidth(15);
-		Content.setIndeterminateDrawable(drawable);
-		Root.addView(Content);
+		content.setIndeterminateDrawable(drawable);
+		root.addView(content);
 		Message = new TextView(getContext());
 		Message.setTextColor(Color.WHITE);
 		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, -2);
 		params.topMargin = UI.dp2px(10);
-		Root.addView(Message, params);
+		root.addView(Message, params);
 		Message.setVisibility(View.GONE);
-		setContentView(Root);
+		setContentView(root);
 	}
 
 	public LoadingDialog setMessage(int res) {

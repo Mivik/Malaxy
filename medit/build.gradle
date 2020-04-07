@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 
 android {
 	compileSdkVersion 29
-	buildToolsVersion "29.0.2"
+	buildToolsVersion "29.0.3"
 
 
 	defaultConfig {
@@ -10,7 +10,6 @@ android {
 		targetSdkVersion 29
 		versionCode 1
 		versionName "1.0"
-
 	}
 
 	buildTypes {
@@ -20,11 +19,13 @@ android {
 		}
 	}
 
+	null
 }
 
 dependencies {
 	api fileTree(dir: 'libs', include: ['*.jar'])
 	implementation 'androidx.appcompat:appcompat:1.1.0'
+	api 'com.github.Mivik:Malax:1.0.10'
 //	api 'com.github.Mivik:Malax:1.0.9'
 //	api 'com.github.Mivik:MLexer:1.0.7'
 }

@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import com.mivik.malaxy.R;
-import com.mivik.malaxy.LoadingDialog;
 import com.mivik.medit.MEdit;
 import com.mivik.mlexer.CursorWrapper;
 import com.mivik.mlexer.RangeSelection;

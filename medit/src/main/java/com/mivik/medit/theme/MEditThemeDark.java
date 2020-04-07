@@ -15,7 +15,6 @@ public class MEditThemeDark extends MEditTheme {
 		final int orange2 = 0xFFEE932B;
 		final int white = 0xFFFFFFFF;
 		final int red2 = 0xFFF97B58;
-		final int blue2 = 0xFF4E5A65;
 		final int blue3 = 0xFF343D46;
 		final int blue5 = 0xFF5FB4B4;
 		final int blue6 = 0xFFA6ACB9;
@@ -27,7 +26,6 @@ public class MEditThemeDark extends MEditTheme {
 		setCursorLineColor(orange);
 //		setCursorColor(0xFFE53935);
 		setIndicatorColor(orange2);
-		setIndicatorGlassColor(0x44FFFFFF & getIndicatorColor());
 		setBackgroundColor(blue3);
 		setLineNumberColor(0xFF868E98);
 		setSlideBarColor(0xFF5F666D);

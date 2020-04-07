@@ -96,4 +96,6 @@
 	<string name="choose_file_goto_homepage">Goto Homepage</string>
 	<string name="choose_file_add_bookmark">Add Bookmark</string>
 	<string name="choose_file_sure_to_remove_bookmark">Are you sure to remove this bookmark?</string>
+	<string name="settings_editor_two_finger_scaling">Two-finger Scaling</string>
+	<string name="settings_editor_two_finger_scaling_description">Enable two-finger scaling to change font size</string>
 </resources>

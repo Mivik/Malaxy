@@ -9,7 +9,7 @@ public class CodeIndentListener implements WrappedEditable.EditActionListener {
 	@Override
 	public boolean beforeAction(WrappedEditable wrappedEditable, WrappedEditable.EditAction editAction) {
 		if (editAction instanceof WrappedEditable.InsertCharAction) {
-			WrappedEditable.InsertCharAction action = (WrappedEditable.InsertCharAction) editAction;
+			WrappedEditable<?>.InsertCharAction action = (WrappedEditable<?>.InsertCharAction) editAction;
 			BaseMalax malax = (BaseMalax) wrappedEditable.unwrap();
 			if (action.ch == '\n') {
 				final int line = ((Cursor) action.lef).line;

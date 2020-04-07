@@ -77,6 +77,8 @@
 	<string name="settings_editor_show_linenumber">显示行号</string>
 	<string name="settings_editor_show_linenumber_description">设定编辑器是否显示行号</string>
 	<string name="settings_editor_dark_mode">夜间主题</string>
+	<string name="settings_editor_two_finger_scaling">双指缩放</string>
+	<string name="settings_editor_two_finger_scaling_description">是否使用双指缩放来调整字体大小</string>
 	<string name="settings_editor_dark_mode_description">设定编辑器是否使用夜间主题</string>
 	<string name="settings_editor_font_set">已设置字体</string>
 	<array name="settings_editor_font_types">

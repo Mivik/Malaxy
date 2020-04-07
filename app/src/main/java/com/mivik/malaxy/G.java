@@ -19,12 +19,13 @@ public final class G implements Const {
 	public static File _HOME_DIR;
 	public static boolean _SHOW_LINE_NUMBER;
 	public static boolean _NIGHT_THEME;
+	public static boolean _TWO_FINGER_SCALING;
 	public static String _FONT_STRING;
 	public static Typeface _FONT;
 	public static final ArrayList<File> _BOOKMARKS = new ArrayList<>();
 	public static boolean _SPLIT_LINE;
 
-	public static final void Initialize(Context cx) {
+	public static void Initialize(Context cx) {
 		S = cx.getSharedPreferences("editor_config", Context.MODE_PRIVATE);
 		String str = S.getString("lexer_name", LEXER_NAMES[0]);
 		for (int i = 0; i < LEXER_NAMES.length; i++)
@@ -41,6 +42,7 @@ public final class G implements Const {
 		}
 		_SHOW_LINE_NUMBER = S.getBoolean("show_line_number", true);
 		_NIGHT_THEME = S.getBoolean("night_theme", true);
+		_TWO_FINGER_SCALING = S.getBoolean("two_finger_scaling", true);
 		_FONT_STRING = S.getString("font", "#FiraCode");
 		_SPLIT_LINE = S.getBoolean("split_line", false);
 		updateFont(cx.getAssets());
@@ -107,24 +109,28 @@ public final class G implements Const {
 		S.edit().putBoolean("night_theme", _NIGHT_THEME = flag).apply();
 	}
 
-	public static void onBookmarksUpdate() {
-		StringBuffer buffer = new StringBuffer();
-		final int size = _BOOKMARKS.size();
-		for (int i = 0; i < size; i++) {
-			buffer.append(_BOOKMARKS.get(i).getAbsolutePath());
-			if (i != size - 1) buffer.append(File.pathSeparatorChar);
-		}
-		S.edit().putString("bookmarks", buffer.toString()).apply();
+	public static void setTwoFingerScaling(boolean flag) {
+		S.edit().putBoolean("two_finger_scaling", _TWO_FINGER_SCALING = flag).apply();
 	}
 
-	public static final int getLexerIndex(MLexer lexer) {
+	public static void onBookmarksUpdate() {
+		StringBuilder builder = new StringBuilder();
+		final int size = _BOOKMARKS.size();
+		for (int i = 0; i < size; i++) {
+			builder.append(_BOOKMARKS.get(i).getAbsolutePath());
+			if (i != size - 1) builder.append(File.pathSeparatorChar);
+		}
+		S.edit().putString("bookmarks", builder.toString()).apply();
+	}
+
+	public static int getLexerIndex(MLexer lexer) {
 		Class<? extends MLexer> cl = lexer.getClass();
 		for (int i = 0; i < LEXERS.length; i++)
 			if (LEXERS[i] == cl) return i;
 		return -1;
 	}
 
-	public static final MLexer newLexer(int index) {
+	public static MLexer newLexer(int index) {
 		try {
 			return LEXERS[index].newInstance();
 		} catch (Throwable t) {
